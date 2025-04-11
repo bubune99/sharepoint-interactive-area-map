@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>US Area Map - Interactive Mockup</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- SharePoint REST API support -->
+    <script type="text/javascript" src="/_layouts/15/MicrosoftAjax.js"></script>
+    <script type="text/javascript" src="/_layouts/15/sp.runtime.js"></script>
+    <script type="text/javascript" src="/_layouts/15/sp.js"></script>
 </head>
 <body>
     <div class="container">
@@ -16,46 +20,46 @@
         <h1>US Area Map</h1>
         
         <div class="map-container">
-            <!-- Background image layer -->
-            <img src="images/background-map.png" class="background-map" alt="Background Map">
+            <!-- Background image layer - will be populated from SharePoint -->
+            <img src="" class="background-map" alt="Background Map">
             
-            <!-- Base map image -->
-            <img src="images/base-map.png" class="base-map" alt="US Map">
+            <!-- Base map image - will be populated from SharePoint -->
+            <img src="" class="base-map" alt="US Map">
             
             <!-- Region layers -->
             <div class="region-layers">
                 <!-- Region 1 with 7 areas -->
                 <div class="region" data-region="Region 1">
-                    <img src="images/region1-area1.png" class="area-layer" data-region="Region 1" data-area="Area 1" alt="Region 1 - Area 1">
-                    <img src="images/region1-area2.png" class="area-layer" data-region="Region 1" data-area="Area 2" alt="Region 1 - Area 2">
-                    <img src="images/region1-area3.png" class="area-layer" data-region="Region 1" data-area="Area 3" alt="Region 1 - Area 3">
-                    <img src="images/region1-area4.png" class="area-layer" data-region="Region 1" data-area="Area 4" alt="Region 1 - Area 4">
-                    <img src="images/region1-area5.png" class="area-layer" data-region="Region 1" data-area="Area 5" alt="Region 1 - Area 5">
-                    <img src="images/region1-area6.png" class="area-layer" data-region="Region 1" data-area="Area 6" alt="Region 1 - Area 6">
-                    <img src="images/region1-area7.png" class="area-layer" data-region="Region 1" data-area="Area 7" alt="Region 1 - Area 7">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 1" alt="Region 1 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 2" alt="Region 1 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 3" alt="Region 1 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 4" alt="Region 1 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 5" alt="Region 1 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 6" alt="Region 1 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 7" alt="Region 1 - Area 7">
                 </div>
                 
                 <!-- Region 2 with 8 areas -->
                 <div class="region" data-region="Region 2">
-                    <img src="images/region2-area1.png" class="area-layer" data-region="Region 2" data-area="Area 1" alt="Region 2 - Area 1">
-                    <img src="images/region2-area2.png" class="area-layer" data-region="Region 2" data-area="Area 2" alt="Region 2 - Area 2">
-                    <img src="images/region2-area3.png" class="area-layer" data-region="Region 2" data-area="Area 3" alt="Region 2 - Area 3">
-                    <img src="images/region2-area4.png" class="area-layer" data-region="Region 2" data-area="Area 4" alt="Region 2 - Area 4">
-                    <img src="images/region2-area5.png" class="area-layer" data-region="Region 2" data-area="Area 5" alt="Region 2 - Area 5">
-                    <img src="images/region2-area6.png" class="area-layer" data-region="Region 2" data-area="Area 6" alt="Region 2 - Area 6">
-                    <img src="images/region2-area7.png" class="area-layer" data-region="Region 2" data-area="Area 7" alt="Region 2 - Area 7">
-                    <img src="images/region2-area8.png" class="area-layer" data-region="Region 2" data-area="Area 8" alt="Region 2 - Area 8">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 1" alt="Region 2 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 2" alt="Region 2 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 3" alt="Region 2 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 4" alt="Region 2 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 5" alt="Region 2 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 6" alt="Region 2 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 7" alt="Region 2 - Area 7">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 8" alt="Region 2 - Area 8">
                 </div>
                 
                 <!-- Region 3 with 7 areas -->
                 <div class="region" data-region="Region 3">
-                    <img src="images/region3-area1.png" class="area-layer" data-region="Region 3" data-area="Area 1" alt="Region 3 - Area 1">
-                    <img src="images/region3-area2.png" class="area-layer" data-region="Region 3" data-area="Area 2" alt="Region 3 - Area 2">
-                    <img src="images/region3-area3.png" class="area-layer" data-region="Region 3" data-area="Area 3" alt="Region 3 - Area 3">
-                    <img src="images/region3-area4.png" class="area-layer" data-region="Region 3" data-area="Area 4" alt="Region 3 - Area 4">
-                    <img src="images/region3-area5.png" class="area-layer" data-region="Region 3" data-area="Area 5" alt="Region 3 - Area 5">
-                    <img src="images/region3-area6.png" class="area-layer" data-region="Region 3" data-area="Area 6" alt="Region 3 - Area 6">
-                    <img src="images/region3-area7.png" class="area-layer" data-region="Region 3" data-area="Area 7" alt="Region 3 - Area 7">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 1" alt="Region 3 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 2" alt="Region 3 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 3" alt="Region 3 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 4" alt="Region 3 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 5" alt="Region 3 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 6" alt="Region 3 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 7" alt="Region 3 - Area 7">
                 </div>
             </div>
             
@@ -160,7 +164,30 @@
                 <button id="remove-button" class="button button-secondary">Remove Assignment</button>
             </div>
         </div>
+        
+        <!-- Image Management Section (For Administrators) -->
+        <div class="controls-container admin-section">
+            <h3>Image Management</h3>
+            <p>This section is for administrators to manage map images. In the production environment, use the SharePoint list instead.</p>
+            
+            <div class="control-group">
+                <a href="sharepoint-image-list-schema.json" target="_blank" class="button">View SharePoint Image List Schema</a>
+            </div>
+            
+            <div class="control-group">
+                <p>To update map images:</p>
+                <ol>
+                    <li>Go to the SharePoint list "MapImages"</li>
+                    <li>Upload new images using the standard SharePoint interface</li>
+                    <li>Set the correct ImageType and AreaNumber values</li>
+                    <li>Refresh this page to see the changes</li>
+                </ol>
+            </div>
+        </div>
     </div>
+
+    <!-- Include the SharePoint integration JavaScript -->
+    <script src="sharepoint-integration.js"></script>
 
     <script>
         // Sample data - this would come from SharePoint list in the real implementation

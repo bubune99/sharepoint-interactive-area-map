@@ -14,6 +14,7 @@ This project provides an interactive US area map that can be integrated with Sha
 - Display of personnel assigned to each area
 - Area management interface for assigning employees to areas
 - SharePoint list integration for easy data management
+- Image management through SharePoint lists
 
 ## Mockup Usage
 
@@ -83,6 +84,15 @@ Create the following SharePoint lists:
 - Area: Lookup to Areas list
 - StartDate: Date
 - Notes: Multiple lines of text
+
+#### MapImages List
+- Title (Image Identifier): Single line of text
+- ImageType (Choice): Type of image ("Background", "Base", "Region1", "Region2", "Region3")
+- AreaNumber (Number): Area number (only for region areas)
+- Image (Image): The actual image file
+- Description (Note): Optional description
+- LastUpdated (Date/Time): When the image was last updated
+- UpdatedBy (Person): Who last updated the image
 
 ### 2. SharePoint Implementation
 

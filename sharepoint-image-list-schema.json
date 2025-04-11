@@ -1,0 +1,59 @@
+{
+  "listName": "MapImages",
+  "description": "Contains all images used in the interactive area map",
+  "fields": [
+    {
+      "name": "Title",
+      "type": "Text",
+      "description": "Image identifier (e.g., background-map, region1-area1)",
+      "required": true
+    },
+    {
+      "name": "ImageType",
+      "type": "Choice",
+      "description": "Type of image",
+      "required": true,
+      "choices": [
+        "Background",
+        "Base",
+        "Region1",
+        "Region2",
+        "Region3"
+      ]
+    },
+    {
+      "name": "AreaNumber",
+      "type": "Number",
+      "description": "Area number (only for region areas)",
+      "required": false
+    },
+    {
+      "name": "Image",
+      "type": "Image",
+      "description": "The actual image file",
+      "required": true
+    },
+    {
+      "name": "Description",
+      "type": "Note",
+      "description": "Optional description of the image",
+      "required": false
+    },
+    {
+      "name": "LastUpdated",
+      "type": "DateTime",
+      "description": "When the image was last updated",
+      "required": false
+    },
+    {
+      "name": "UpdatedBy",
+      "type": "Person",
+      "description": "Who last updated the image",
+      "required": false
+    }
+  ],
+  "defaultView": {
+    "columns": ["Title", "ImageType", "AreaNumber", "Image", "LastUpdated", "UpdatedBy"],
+    "sortBy": "ImageType"
+  }
+}
