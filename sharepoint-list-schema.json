@@ -1,0 +1,104 @@
+{
+  "lists": [
+    {
+      "name": "Regions",
+      "description": "Contains the main regions for the interactive map",
+      "fields": [
+        {
+          "name": "Title",
+          "type": "Text",
+          "description": "Region Name (e.g., Region 1, Region 2, Region 3)",
+          "required": true
+        },
+        {
+          "name": "Description",
+          "type": "Note",
+          "description": "Detailed description of the region",
+          "required": false
+        },
+        {
+          "name": "ImagePath",
+          "type": "Text",
+          "description": "Path to the region image in SharePoint",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Areas",
+      "description": "Contains the areas within each region",
+      "fields": [
+        {
+          "name": "Title",
+          "type": "Text",
+          "description": "Area Name (e.g., Area 1, Area 2)",
+          "required": true
+        },
+        {
+          "name": "Region",
+          "type": "Lookup",
+          "lookupList": "Regions",
+          "lookupField": "Title",
+          "description": "The region this area belongs to",
+          "required": true
+        },
+        {
+          "name": "Description",
+          "type": "Note",
+          "description": "Detailed description of the area",
+          "required": false
+        },
+        {
+          "name": "ImagePath",
+          "type": "Text",
+          "description": "Path to the area image in SharePoint",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "PersonnelAssignments",
+      "description": "Contains the assignments of personnel to areas",
+      "fields": [
+        {
+          "name": "Title",
+          "type": "Text",
+          "description": "Assignment title (auto-generated)",
+          "required": true
+        },
+        {
+          "name": "Employee",
+          "type": "Person",
+          "description": "The employee assigned to the area",
+          "required": true
+        },
+        {
+          "name": "Area",
+          "type": "Lookup",
+          "lookupList": "Areas",
+          "lookupField": "Title",
+          "description": "The area the employee is assigned to",
+          "required": true
+        },
+        {
+          "name": "StartDate",
+          "type": "DateTime",
+          "description": "When the assignment begins",
+          "required": false
+        },
+        {
+          "name": "EndDate",
+          "type": "DateTime",
+          "description": "When the assignment ends (if applicable)",
+          "required": false
+        },
+        {
+          "name": "Notes",
+          "type": "Note",
+          "description": "Additional notes about the assignment",
+          "required": false
+        }
+      ]
+    }
+  ]
+}
