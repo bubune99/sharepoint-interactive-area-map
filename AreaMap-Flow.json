@@ -1,0 +1,88 @@
+{
+    "name": "Area Map Personnel Auto-Update",
+    "properties": {
+        "connectionReferences": {
+            "shared_sharepointonline": {
+                "connection": {
+                    "id": "/connectionReferences/shared_sharepointonline"
+                },
+                "api": {
+                    "name": "shared_sharepointonline"
+                }
+            },
+            "shared_office365users": {
+                "connection": {
+                    "id": "/connectionReferences/shared_office365users"
+                },
+                "api": {
+                    "name": "shared_office365users"
+                }
+            }
+        },
+        "definition": {
+            "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "$connections": {
+                    "defaultValue": {},
+                    "type": "Object"
+                },
+                "ListName": {
+                    "defaultValue": "AreaPersonnel",
+                    "type": "String"
+                }
+            },
+            "triggers": {
+                "When_an_item_is_created_or_modified": {
+                    "type": "ApiConnectionWebhook",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['shared_sharepointonline']['connectionId']"
+                            }
+                        },
+                        "path": "/trigger",
+                        "body": {
+                            "list": "@parameters('ListName')"
+                        }
+                    }
+                }
+            },
+            "actions": {
+                "Get_user_details": {
+                    "runAfter": {},
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['shared_office365users']['connectionId']"
+                            }
+                        },
+                        "method": "get",
+                        "path": "/v1.0/users/@{triggerBody()?['User']?['Claims']}/profile"
+                    }
+                },
+                "Update_item": {
+                    "runAfter": ["Get_user_details"],
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['shared_sharepointonline']['connectionId']"
+                            }
+                        },
+                        "method": "patch",
+                        "path": "/datasets/@{encodeURIComponent(triggerBody()?['@odata.type'])}/tables/@{encodeURIComponent(triggerBody()?['List'])}/items/@{encodeURIComponent(triggerBody()?['ID'])}",
+                        "body": {
+                            "FirstName": "@body('Get_user_details')?['givenName']",
+                            "LastName": "@body('Get_user_details')?['surname']",
+                            "Email": "@body('Get_user_details')?['mail']",
+                            "PreferredFirstName": "@if(empty(triggerBody()?['PreferredFirstName']), body('Get_user_details')?['givenName'], triggerBody()?['PreferredFirstName'])",
+                            "LastUpdated": "@utcNow()"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "properties": {
+        "connectionReferences": {
+            "sharepointonline": {
+                "connection": {
+                    "id": ""
+                },
+                "api": {
+                    "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                }
+            },
+            "office365users": {
+                "connection": {
+                    "id": ""
+                },
+                "api": {
+                    "id": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                }
+            }
+        },
+        "flowName": "AreaPersonnel-AutoUpdate"
+    }
+}

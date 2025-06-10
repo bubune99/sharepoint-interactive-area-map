@@ -1,0 +1,634 @@
+import * as React from 'react';
+import * as ReactDom from 'react-dom';
+import { Version } from '@microsoft/sp-core-library';
+import {
+  IPropertyPaneConfiguration,
+  PropertyPaneTextField,
+  PropertyPaneDropdown,
+  PropertyPaneToggle,
+  PropertyPaneSlider,
+  PropertyPaneChoiceGroup
+} from '@microsoft/sp-property-pane';
+import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { IReadonlyTheme } from '@microsoft/sp-component-base';
+
+import * as strings from 'InteractiveAreaMapWebPartStrings';
+import InteractiveAreaMap from './components/InteractiveAreaMap';
+import { IInteractiveAreaMapProps } from './components/IInteractiveAreaMapProps';
+
+// Import SPHttpClient for SharePoint API calls
+import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
+
+// Define the web part properties interface
+export interface IInteractiveAreaMapWebPartProps {
+  // Data Source Configuration
+  dataSourceType: string;
+  regionsListName: string;
+  areasListName: string;
+  personnelAssignmentsListName: string;
+  mapImagesListName: string;
+  customSiteUrl: string;
+  
+  // Power Automate Configuration
+  flowTriggerUrl: string;
+  flowAuthKey: string;
+  
+  // Direct Input Configuration
+  regionsData: string;
+  areasData: string;
+  personnelData: string;
+  mapImagesData: string;
+  
+  // Map Appearance
+  mapTitle: string;
+  colorScheme: string;
+  region1Color: string;
+  region2Color: string;
+  region3Color: string;
+  highlightColor: string;
+  selectedColor: string;
+  mapSize: string;
+  customWidth: string;
+  customHeight: string;
+  
+  // Behavior Settings
+  enableZoom: boolean;
+  enableHoverEffects: boolean;
+  showRegionLabels: boolean;
+  autoRefreshInterval: number;
+  
+  // Advanced Settings
+  cacheData: boolean;
+  debugMode: boolean;
+  customCSS: string;
+}
+
+export default class InteractiveAreaMapWebPart extends BaseClientSideWebPart<IInteractiveAreaMapWebPartProps> {
+  private _isDarkTheme: boolean = false;
+  private _environmentMessage: string = '';
+
+  // Data objects
+  private _regions: any[] = [];
+  private _areas: any[] = [];
+  private _personnelAssignments: any[] = [];
+  private _mapImages: any[] = [];
+  private _isLoading: boolean = true;
+
+  // Refresh timer
+  private _refreshTimer: any = null;
+
+  public render(): void {
+    const element: React.ReactElement<IInteractiveAreaMapProps> = React.createElement(
+      InteractiveAreaMap,
+      {
+        // Pass the web part properties and context
+        webpartContext: this.context,
+        properties: this.properties,
+        
+        // Pass the data
+        regions: this._regions,
+        areas: this._areas,
+        personnelAssignments: this._personnelAssignments,
+        mapImages: this._mapImages,
+        isLoading: this._isLoading,
+        
+        // Pass the theme information
+        isDarkTheme: this._isDarkTheme,
+        environmentMessage: this._environmentMessage,
+        
+        // Pass the update methods
+        onRefreshData: this._loadData.bind(this),
+        onTriggerFlow: this._triggerPowerAutomateFlow.bind(this),
+        
+        // Pass the display properties
+        hasTeamsContext: !!this.context.sdks.microsoftTeams,
+        userDisplayName: this.context.pageContext.user.displayName
+      }
+    );
+
+    ReactDom.render(element, this.domElement);
+  }
+
+  protected async onInit(): Promise<void> {
+    this._environmentMessage = this._getEnvironmentMessage();
+
+    // Initialize default property values if not set
+    if (!this.properties.dataSourceType) {
+      this.properties.dataSourceType = 'sharePointLists';
+    }
+    
+    if (!this.properties.regionsListName) {
+      this.properties.regionsListName = 'Regions';
+    }
+    
+    if (!this.properties.areasListName) {
+      this.properties.areasListName = 'Areas';
+    }
+    
+    if (!this.properties.personnelAssignmentsListName) {
+      this.properties.personnelAssignmentsListName = 'PersonnelAssignments';
+    }
+    
+    if (!this.properties.mapImagesListName) {
+      this.properties.mapImagesListName = 'MapImages';
+    }
+    
+    if (!this.properties.mapTitle) {
+      this.properties.mapTitle = 'US Area Map';
+    }
+    
+    if (!this.properties.colorScheme) {
+      this.properties.colorScheme = 'default';
+    }
+    
+    if (!this.properties.mapSize) {
+      this.properties.mapSize = 'medium';
+    }
+    
+    // Set default behavior settings
+    if (this.properties.enableZoom === undefined) {
+      this.properties.enableZoom = true;
+    }
+    
+    if (this.properties.enableHoverEffects === undefined) {
+      this.properties.enableHoverEffects = true;
+    }
+    
+    if (this.properties.showRegionLabels === undefined) {
+      this.properties.showRegionLabels = true;
+    }
+    
+    if (this.properties.autoRefreshInterval === undefined) {
+      this.properties.autoRefreshInterval = 0; // No auto-refresh by default
+    }
+    
+    // Load the data based on the data source type
+    await this._loadData();
+    
+    // Set up auto-refresh if enabled
+    this._setupAutoRefresh();
+
+    return super.onInit();
+  }
+
+  // Load data based on the data source type
+  private async _loadData(): Promise<void> {
+    this._isLoading = true;
+    this.render(); // Re-render to show loading state
+    
+    try {
+      switch (this.properties.dataSourceType) {
+        case 'sharePointLists':
+          await this._loadDataFromSharePoint();
+          break;
+        case 'directInput':
+          this._loadDataFromDirectInput();
+          break;
+        case 'powerAutomate':
+          await this._loadDataFromPowerAutomate();
+          break;
+        default:
+          console.error('Invalid data source type:', this.properties.dataSourceType);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      // Handle error state
+    } finally {
+      this._isLoading = false;
+      this.render(); // Re-render with loaded data
+    }
+  }
+
+  // Load data from SharePoint lists
+  private async _loadDataFromSharePoint(): Promise<void> {
+    const siteUrl = this.properties.customSiteUrl || this.context.pageContext.web.absoluteUrl;
+    
+    // Load regions
+    this._regions = await this._getItemsFromList(siteUrl, this.properties.regionsListName);
+    
+    // Load areas with expanded Region field
+    const areasEndpoint = `${siteUrl}/_api/web/lists/getbytitle('${this.properties.areasListName}')/items?$select=Id,Title,Description,ImagePath,Region/Id,Region/Title&$expand=Region`;
+    const areasResponse = await this.context.spHttpClient.get(areasEndpoint, SPHttpClient.configurations.v1);
+    const areasData = await areasResponse.json();
+    this._areas = areasData.value.map(item => ({
+      id: item.Id,
+      title: item.Title,
+      description: item.Description,
+      imagePath: item.ImagePath,
+      regionId: item.Region ? item.Region.Id : null,
+      regionTitle: item.Region ? item.Region.Title : null
+    }));
+    
+    // Load personnel assignments with expanded fields
+    const personnelEndpoint = `${siteUrl}/_api/web/lists/getbytitle('${this.properties.personnelAssignmentsListName}')/items?$select=Id,Title,StartDate,EndDate,Notes,Employee/Id,Employee/Title,Area/Id,Area/Title,Area/Region/Id,Area/Region/Title&$expand=Employee,Area,Area/Region`;
+    const personnelResponse = await this.context.spHttpClient.get(personnelEndpoint, SPHttpClient.configurations.v1);
+    const personnelData = await personnelResponse.json();
+    this._personnelAssignments = personnelData.value.map(item => ({
+      id: item.Id,
+      title: item.Title,
+      startDate: item.StartDate,
+      endDate: item.EndDate,
+      notes: item.Notes,
+      employeeId: item.Employee ? item.Employee.Id : null,
+      employeeName: item.Employee ? item.Employee.Title : null,
+      areaId: item.Area ? item.Area.Id : null,
+      areaTitle: item.Area ? item.Area.Title : null,
+      regionId: item.Area && item.Area.Region ? item.Area.Region.Id : null,
+      regionTitle: item.Area && item.Area.Region ? item.Area.Region.Title : null
+    }));
+    
+    // Load map images
+    const imagesEndpoint = `${siteUrl}/_api/web/lists/getbytitle('${this.properties.mapImagesListName}')/items?$select=Id,Title,ImageType,AreaNumber,Description,LastUpdated,UpdatedBy/Title,Image/ServerRelativeUrl&$expand=UpdatedBy,Image`;
+    const imagesResponse = await this.context.spHttpClient.get(imagesEndpoint, SPHttpClient.configurations.v1);
+    const imagesData = await imagesResponse.json();
+    this._mapImages = imagesData.value.map(item => ({
+      id: item.Id,
+      title: item.Title,
+      imageType: item.ImageType,
+      areaNumber: item.AreaNumber,
+      description: item.Description,
+      lastUpdated: item.LastUpdated,
+      updatedBy: item.UpdatedBy ? item.UpdatedBy.Title : null,
+      imageUrl: item.Image ? item.Image.ServerRelativeUrl : null
+    }));
+  }
+
+  // Helper method to get items from a SharePoint list
+  private async _getItemsFromList(siteUrl: string, listName: string): Promise<any[]> {
+    const endpoint = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items`;
+    const response = await this.context.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    const data = await response.json();
+    return data.value;
+  }
+
+  // Load data from direct input (JSON in property pane)
+  private _loadDataFromDirectInput(): void {
+    try {
+      if (this.properties.regionsData) {
+        this._regions = JSON.parse(this.properties.regionsData);
+      }
+      
+      if (this.properties.areasData) {
+        this._areas = JSON.parse(this.properties.areasData);
+      }
+      
+      if (this.properties.personnelData) {
+        this._personnelAssignments = JSON.parse(this.properties.personnelData);
+      }
+      
+      if (this.properties.mapImagesData) {
+        this._mapImages = JSON.parse(this.properties.mapImagesData);
+      }
+    } catch (error) {
+      console.error('Error parsing direct input data:', error);
+    }
+  }
+
+  // Load data from Power Automate flow
+  private async _loadDataFromPowerAutomate(): Promise<void> {
+    try {
+      if (!this.properties.flowTriggerUrl) {
+        console.error('Power Automate flow trigger URL not configured');
+        return;
+      }
+      
+      const response = await fetch(this.properties.flowTriggerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.properties.flowAuthKey && { 'Authorization': `Bearer ${this.properties.flowAuthKey}` })
+        },
+        body: JSON.stringify({
+          action: 'getData',
+          webUrl: this.context.pageContext.web.absoluteUrl,
+          userEmail: this.context.pageContext.user.email
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.regions) {
+        this._regions = data.regions;
+      }
+      
+      if (data.areas) {
+        this._areas = data.areas;
+      }
+      
+      if (data.personnelAssignments) {
+        this._personnelAssignments = data.personnelAssignments;
+      }
+      
+      if (data.mapImages) {
+        this._mapImages = data.mapImages;
+      }
+    } catch (error) {
+      console.error('Error loading data from Power Automate:', error);
+    }
+  }
+
+  // Trigger a Power Automate flow with data
+  private async _triggerPowerAutomateFlow(data: any): Promise<any> {
+    try {
+      if (!this.properties.flowTriggerUrl) {
+        console.error('Power Automate flow trigger URL not configured');
+        return null;
+      }
+      
+      const response = await fetch(this.properties.flowTriggerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.properties.flowAuthKey && { 'Authorization': `Bearer ${this.properties.flowAuthKey}` })
+        },
+        body: JSON.stringify({
+          ...data,
+          webUrl: this.context.pageContext.web.absoluteUrl,
+          userEmail: this.context.pageContext.user.email
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error triggering Power Automate flow:', error);
+      return null;
+    }
+  }
+
+  // Set up auto-refresh timer
+  private _setupAutoRefresh(): void {
+    // Clear any existing timer
+    if (this._refreshTimer) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+    
+    // Set up new timer if interval is greater than 0
+    if (this.properties.autoRefreshInterval > 0) {
+      const intervalMs = this.properties.autoRefreshInterval * 60 * 1000; // Convert minutes to milliseconds
+      this._refreshTimer = setInterval(() => {
+        this._loadData();
+      }, intervalMs);
+    }
+  }
+
+  private _getEnvironmentMessage(): string {
+    if (!!this.context.sdks.microsoftTeams) { // running in Teams
+      return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
+    }
+
+    return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
+  }
+
+  protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
+    if (!currentTheme) {
+      return;
+    }
+
+    this._isDarkTheme = !!currentTheme.isInverted;
+    const {
+      semanticColors
+    } = currentTheme;
+
+    if (semanticColors) {
+      this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
+      this.domElement.style.setProperty('--link', semanticColors.link || null);
+      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
+    }
+  }
+
+  protected onDispose(): void {
+    ReactDom.unmountComponentAtNode(this.domElement);
+    
+    // Clear auto-refresh timer
+    if (this._refreshTimer) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+  }
+
+  protected get dataVersion(): Version {
+    return Version.parse('1.0');
+  }
+
+  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    // Property pane configuration changes based on data source type
+    let dataSourceFields = [];
+    
+    switch (this.properties.dataSourceType) {
+      case 'sharePointLists':
+        dataSourceFields = [
+          PropertyPaneTextField('regionsListName', {
+            label: strings.RegionsListNameFieldLabel,
+            description: strings.RegionsListNameFieldDescription
+          }),
+          PropertyPaneTextField('areasListName', {
+            label: strings.AreasListNameFieldLabel,
+            description: strings.AreasListNameFieldDescription
+          }),
+          PropertyPaneTextField('personnelAssignmentsListName', {
+            label: strings.PersonnelAssignmentsListNameFieldLabel,
+            description: strings.PersonnelAssignmentsListNameFieldDescription
+          }),
+          PropertyPaneTextField('mapImagesListName', {
+            label: strings.MapImagesListNameFieldLabel,
+            description: strings.MapImagesListNameFieldDescription
+          }),
+          PropertyPaneTextField('customSiteUrl', {
+            label: strings.CustomSiteUrlFieldLabel,
+            description: strings.CustomSiteUrlFieldDescription
+          })
+        ];
+        break;
+      
+      case 'directInput':
+        dataSourceFields = [
+          PropertyPaneTextField('regionsData', {
+            label: strings.RegionsDataFieldLabel,
+            description: strings.RegionsDataFieldDescription,
+            multiline: true,
+            rows: 5
+          }),
+          PropertyPaneTextField('areasData', {
+            label: strings.AreasDataFieldLabel,
+            description: strings.AreasDataFieldDescription,
+            multiline: true,
+            rows: 5
+          }),
+          PropertyPaneTextField('personnelData', {
+            label: strings.PersonnelDataFieldLabel,
+            description: strings.PersonnelDataFieldDescription,
+            multiline: true,
+            rows: 5
+          }),
+          PropertyPaneTextField('mapImagesData', {
+            label: strings.MapImagesDataFieldLabel,
+            description: strings.MapImagesDataFieldDescription,
+            multiline: true,
+            rows: 5
+          })
+        ];
+        break;
+      
+      case 'powerAutomate':
+        dataSourceFields = [
+          PropertyPaneTextField('flowTriggerUrl', {
+            label: strings.FlowTriggerUrlFieldLabel,
+            description: strings.FlowTriggerUrlFieldDescription
+          }),
+          PropertyPaneTextField('flowAuthKey', {
+            label: strings.FlowAuthKeyFieldLabel,
+            description: strings.FlowAuthKeyFieldDescription
+          })
+        ];
+        break;
+    }
+    
+    // Color scheme fields change based on color scheme selection
+    let colorFields = [];
+    
+    if (this.properties.colorScheme === 'custom') {
+      colorFields = [
+        PropertyPaneTextField('region1Color', {
+          label: strings.Region1ColorFieldLabel
+        }),
+        PropertyPaneTextField('region2Color', {
+          label: strings.Region2ColorFieldLabel
+        }),
+        PropertyPaneTextField('region3Color', {
+          label: strings.Region3ColorFieldLabel
+        }),
+        PropertyPaneTextField('highlightColor', {
+          label: strings.HighlightColorFieldLabel
+        }),
+        PropertyPaneTextField('selectedColor', {
+          label: strings.SelectedColorFieldLabel
+        })
+      ];
+    }
+    
+    // Size fields change based on size selection
+    let sizeFields = [];
+    
+    if (this.properties.mapSize === 'custom') {
+      sizeFields = [
+        PropertyPaneTextField('customWidth', {
+          label: strings.CustomWidthFieldLabel
+        }),
+        PropertyPaneTextField('customHeight', {
+          label: strings.CustomHeightFieldLabel
+        })
+      ];
+    }
+
+    return {
+      pages: [
+        {
+          header: {
+            description: strings.PropertyPaneDescription
+          },
+          groups: [
+            {
+              groupName: strings.DataSourceGroupName,
+              groupFields: [
+                PropertyPaneChoiceGroup('dataSourceType', {
+                  label: strings.DataSourceTypeFieldLabel,
+                  options: [
+                    { key: 'sharePointLists', text: strings.DataSourceTypeSharePointLists },
+                    { key: 'directInput', text: strings.DataSourceTypeDirectInput },
+                    { key: 'powerAutomate', text: strings.DataSourceTypePowerAutomate }
+                  ]
+                }),
+                ...dataSourceFields
+              ]
+            },
+            {
+              groupName: strings.AppearanceGroupName,
+              groupFields: [
+                PropertyPaneTextField('mapTitle', {
+                  label: strings.MapTitleFieldLabel
+                }),
+                PropertyPaneDropdown('colorScheme', {
+                  label: strings.ColorSchemeFieldLabel,
+                  options: [
+                    { key: 'default', text: strings.ColorSchemeDefault },
+                    { key: 'corporate', text: strings.ColorSchemeCorporate },
+                    { key: 'highContrast', text: strings.ColorSchemeHighContrast },
+                    { key: 'custom', text: strings.ColorSchemeCustom }
+                  ]
+                }),
+                ...colorFields,
+                PropertyPaneDropdown('mapSize', {
+                  label: strings.MapSizeFieldLabel,
+                  options: [
+                    { key: 'small', text: strings.MapSizeSmall },
+                    { key: 'medium', text: strings.MapSizeMedium },
+                    { key: 'large', text: strings.MapSizeLarge },
+                    { key: 'custom', text: strings.MapSizeCustom }
+                  ]
+                }),
+                ...sizeFields
+              ]
+            }
+          ]
+        },
+        {
+          header: {
+            description: strings.AdvancedPropertyPaneDescription
+          },
+          groups: [
+            {
+              groupName: strings.BehaviorGroupName,
+              groupFields: [
+                PropertyPaneToggle('enableZoom', {
+                  label: strings.EnableZoomFieldLabel
+                }),
+                PropertyPaneToggle('enableHoverEffects', {
+                  label: strings.EnableHoverEffectsFieldLabel
+                }),
+                PropertyPaneToggle('showRegionLabels', {
+                  label: strings.ShowRegionLabelsFieldLabel
+                }),
+                PropertyPaneDropdown('autoRefreshInterval', {
+                  label: strings.AutoRefreshIntervalFieldLabel,
+                  options: [
+                    { key: 0, text: strings.AutoRefreshIntervalNone },
+                    { key: 1, text: strings.AutoRefreshInterval1Min },
+                    { key: 5, text: strings.AutoRefreshInterval5Min },
+                    { key: 15, text: strings.AutoRefreshInterval15Min },
+                    { key: 30, text: strings.AutoRefreshInterval30Min },
+                    { key: 60, text: strings.AutoRefreshInterval1Hour }
+                  ]
+                })
+              ]
+            },
+            {
+              groupName: strings.AdvancedGroupName,
+              groupFields: [
+                PropertyPaneToggle('cacheData', {
+                  label: strings.CacheDataFieldLabel
+                }),
+                PropertyPaneToggle('debugMode', {
+                  label: strings.DebugModeFieldLabel
+                }),
+                PropertyPaneTextField('customCSS', {
+                  label: strings.CustomCSSFieldLabel,
+                  multiline: true,
+                  rows: 5
+                })
+              ]
+            }
+          ]
+        }
+      ]
+    };
+  }
+}

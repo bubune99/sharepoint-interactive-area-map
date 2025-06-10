@@ -1,0 +1,42 @@
+Title,Region,Area,Employee,StartDate,EndDate,Notes,IsPrimary
+"Assignment 1","East","East Baltimore 1","John Smith","2025-01-15","","Primary contact for Baltimore area","Yes"
+"Assignment 2","East","East South East 2","Sarah Johnson","2025-02-01","","Handles special accounts","Yes"
+"Assignment 3","East","East New England 3","Michael Brown","2025-01-10","","Regional specialist","Yes"
+"Assignment 4","East","East New York 4","Emily Davis","2024-11-15","","Senior territory manager","Yes"
+"Assignment 5","East","East Philadelphia 5","David Wilson","2025-03-01","","New hire - training in progress","Yes"
+"Assignment 6","East","East Gulf Coast 6","Amanda White","2024-10-01","","Team lead for Gulf Coast","Yes"
+"Assignment 7","East","East Florida 7","Robert Taylor","2025-02-15","","Specializes in government accounts","Yes"
+"Assignment 8","Central","Central Chicago 1","Jennifer Lee","2024-12-01","","Manages Chicago territory","Yes"
+"Assignment 9","Central","Central Michigan 2","Thomas Anderson","2025-01-20","","Technical specialist","Yes"
+"Assignment 10","Central","Central Ohio Valley 3","Jessica Martinez","2024-11-10","","Bilingual representative","Yes"
+"Assignment 11","Central","Central Central Plains 4","Christopher Clark","2025-02-10","","Senior account executive","Yes"
+"Assignment 12","Central","Central North Central 5","Melissa Rodriguez","2024-09-15","","Regional director","Yes"
+"Assignment 13","Central","Central Nashville 6","Daniel Thompson","2025-03-05","","New territory assignment","Yes"
+"Assignment 14","Central","Central St. Louis 7","Stephanie Lewis","2024-10-15","","Handles key accounts","Yes"
+"Assignment 15","Central","Central Tulsa 8","Kevin Walker","2025-01-05","","Technical support specialist","Yes"
+"Assignment 16","West","West Denver 1","Laura Hall","2024-11-20","","Denver territory manager","Yes"
+"Assignment 17","West","West Dallas 2","Brian Young","2025-02-20","","Account development specialist","Yes"
+"Assignment 18","West","West Houston 3","Nicole King","2024-12-15","","Senior representative","Yes"
+"Assignment 19","West","West Phoenix 4","James Baker","2025-01-25","","Technical lead","Yes"
+"Assignment 20","West","West Northern California 5","Elizabeth Nelson","2024-10-10","","Regional coordinator","Yes"
+"Assignment 21","West","West Seattle 6","Charles Hill","2025-03-10","","New assignment - transition period","Yes"
+"Assignment 22","West","West Southern California 7","Karen Phillips","2024-09-01","","Team lead for Southern California","Yes"
+
+# Multi-area assignments (same employee assigned to multiple areas)
+"Assignment 23","East","East South East 2","John Smith","2025-01-20","","Secondary assignment - special project","No"
+"Assignment 24","East","East New England 3","John Smith","2025-01-25","","Temporary coverage","No"
+
+# Cross-region assignments (same employee assigned to areas in different regions)
+"Assignment 25","Central","Central Chicago 1","Michael Brown","2025-02-01","","Cross-region support","No"
+"Assignment 26","Central","Central Michigan 2","Michael Brown","2025-02-05","","Expansion project","No"
+
+# Regional manager (responsible for multiple areas in a region)
+"Assignment 27","West","West Denver 1","Mark Evans","2024-10-01","","Regional manager - Western territory","Yes"
+"Assignment 28","West","West Dallas 2","Mark Evans","2024-10-01","","Regional manager - Western territory","No"
+"Assignment 29","West","West Houston 3","Mark Evans","2024-10-01","","Regional manager - Western territory","No"
+"Assignment 30","West","West Phoenix 4","Mark Evans","2024-10-01","","Regional manager - Western territory","No"
+
+# National account manager (covers areas across all regions)
+"Assignment 31","East","East Baltimore 1","Patricia Wilson","2024-11-01","","National accounts manager","No"
+"Assignment 32","Central","Central Ohio Valley 3","Patricia Wilson","2024-11-01","","National accounts manager","Yes"
+"Assignment 33","West","West Northern California 5","Patricia Wilson","2024-11-01","","National accounts manager","No"

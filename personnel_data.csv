@@ -1,0 +1,6 @@
+Title,UserEmail,UserDisplayName,FirstName,LastName,PreferredFirstName,UserDepartment,UserJobTitle,PrimaryAreaIDs,SecondaryAreaIDs,ManagerDisplayName,ManagerEmail,ManagerDepartment,ManagerJobTitle
+John Smith,john.smith@company.com,John Smith,John,Smith,Johnny,Sales,Sales Engineer,A1;A2,B1,Jane Manager,jane.manager@company.com,Sales,Regional Manager
+Jane Manager,jane.manager@company.com,Jane Manager,Jane,Manager,,Sales,Regional Manager,B1;B2;B3,,Tom Director,tom.director@company.com,Executive,Sales Director
+Bob Wilson,bob.wilson@company.com,Bob Wilson,Robert,Wilson,Bob,Technical,Support Engineer,C1,A3;A4,Jane Manager,jane.manager@company.com,Sales,Regional Manager
+Sarah Lee,sarah.lee@company.com,Sarah Lee,Sarah,Lee,,Marketing,Marketing Specialist,A2;A3,B2;B3,Tom Director,tom.director@company.com,Executive,Sales Director
+Tom Director,tom.director@company.com,Tom Director,Thomas,Director,Tom,Executive,Sales Director,A1;B1;C1,,,,,

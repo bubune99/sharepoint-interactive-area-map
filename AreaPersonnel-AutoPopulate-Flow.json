@@ -1,0 +1,177 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workflows_AreaPersonnel_AutoPopulate_name": {
+            "defaultValue": "AreaPersonnel-AutoPopulate",
+            "type": "String"
+        },
+        "sharepointSiteUrl": {
+            "defaultValue": "https://yourcompany.sharepoint.com/sites/YourSite",
+            "type": "String",
+            "metadata": {
+                "description": "URL of your SharePoint site"
+            }
+        },
+        "areaPersonnelListName": {
+            "defaultValue": "AreaPersonnel",
+            "type": "String",
+            "metadata": {
+                "description": "Name of your AreaPersonnel SharePoint list"
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('workflows_AreaPersonnel_AutoPopulate_name')]",
+            "location": "eastus",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "When_an_item_is_created_or_modified": {
+                            "type": "ApiConnectionWebhook",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('[parameters(''sharepointSiteUrl'')]'))}/tables/@{encodeURIComponent(encodeURIComponent('[parameters(''areaPersonnelListName'')]'))}/onupdatedItems",
+                                "body": {
+                                    "notificationUrl": "@{listCallbackUrl()}"
+                                }
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Condition_-_Check_if_User_exists": {
+                            "actions": {
+                                "Get_user_profile_(V2)": {
+                                    "runAfter": {},
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['office365users']['connectionId']"
+                                            }
+                                        },
+                                        "method": "get",
+                                        "path": "/v2/UserProfile",
+                                        "queries": {
+                                            "id": "@triggerOutputs()?['body/User/Email']"
+                                        }
+                                    }
+                                },
+                                "Condition_-_Check_if_PreferredFirstName_is_empty": {
+                                    "actions": {
+                                        "Update_item_-_Set_FirstName_LastName_Email": {
+                                            "runAfter": {},
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "patch",
+                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('[parameters(''sharepointSiteUrl'')]'))}/tables/@{encodeURIComponent(encodeURIComponent('[parameters(''areaPersonnelListName'')]'))}/items/@{encodeURIComponent(triggerOutputs()?['body/ID'])}",
+                                                "body": {
+                                                    "FirstName": "@outputs('Get_user_profile_(V2)')?['body/givenName']",
+                                                    "LastName": "@outputs('Get_user_profile_(V2)')?['body/surname']",
+                                                    "Email": "@outputs('Get_user_profile_(V2)')?['body/mail']",
+                                                    "PreferredFirstName": "@outputs('Get_user_profile_(V2)')?['body/givenName']"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Get_user_profile_(V2)": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@empty(triggerOutputs()?['body/PreferredFirstName'])",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If",
+                                    "else": {
+                                        "actions": {
+                                            "Update_item_-_Keep_PreferredFirstName": {
+                                                "runAfter": {},
+                                                "type": "ApiConnection",
+                                                "inputs": {
+                                                    "host": {
+                                                        "connection": {
+                                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                        }
+                                                    },
+                                                    "method": "patch",
+                                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('[parameters(''sharepointSiteUrl'')]'))}/tables/@{encodeURIComponent(encodeURIComponent('[parameters(''areaPersonnelListName'')]'))}/items/@{encodeURIComponent(triggerOutputs()?['body/ID'])}",
+                                                    "body": {
+                                                        "FirstName": "@outputs('Get_user_profile_(V2)')?['body/givenName']",
+                                                        "LastName": "@outputs('Get_user_profile_(V2)')?['body/surname']",
+                                                        "Email": "@outputs('Get_user_profile_(V2)')?['body/mail']"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {},
+                            "expression": {
+                                "and": [
+                                    {
+                                        "not": {
+                                            "equals": [
+                                                "@triggerOutputs()?['body/User/Email']",
+                                                null
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "sharepointonline": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', 'sharepointonline')]",
+                                "connectionName": "sharepointonline",
+                                "id": "/subscriptions/{0}/providers/Microsoft.Web/locations/eastus/managedApis/sharepointonline"
+                            },
+                            "office365users": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', 'office365users')]",
+                                "connectionName": "office365users",
+                                "id": "/subscriptions/{0}/providers/Microsoft.Web/locations/eastus/managedApis/office365users"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

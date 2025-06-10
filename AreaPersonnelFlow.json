@@ -1,0 +1,95 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {},
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "AreaPersonnel-AutoUpdate",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "triggers": {
+                        "When_an_item_is_created_or_modified": {
+                            "inputs": {
+                                "body": {
+                                    "notificationUrl": "@{listCallbackUrl()}"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                    }
+                                },
+                                "path": "/trigger"
+                            },
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 3
+                            },
+                            "splitOn": "@triggerBody()?['value']",
+                            "type": "ApiConnectionWebhook"
+                        }
+                    },
+                    "actions": {
+                        "Get_user_profile": {
+                            "runAfter": {},
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365users']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/v1.0/users/@{triggerBody()?['User']?['Claims']}/profile"
+                            }
+                        },
+                        "Update_item": {
+                            "runAfter": ["Get_user_profile"],
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                    }
+                                },
+                                "method": "patch",
+                                "path": "/datasets/@{encodeURIComponent('https://{site-url}.sharepoint.com')}/tables/@{encodeURIComponent('AreaPersonnel')}/items/@{encodeURIComponent(triggerBody()?['ID'])}",
+                                "body": {
+                                    "FirstName": "@body('Get_user_profile')?['givenName']",
+                                    "LastName": "@body('Get_user_profile')?['surname']",
+                                    "Email": "@body('Get_user_profile')?['mail']",
+                                    "PreferredFirstName": "@if(empty(triggerBody()?['PreferredFirstName']), body('Get_user_profile')?['givenName'], triggerBody()?['PreferredFirstName'])",
+                                    "LastUpdated": "@utcNow()"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "sharepointonline": {
+                                "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/{location}/managedApis/sharepointonline",
+                                "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Web/connections/sharepointonline",
+                                "connectionName": "sharepointonline"
+                            },
+                            "office365users": {
+                                "id": "/subscriptions/{subscription-id}/providers/Microsoft.Web/locations/{location}/managedApis/office365users",
+                                "connectionId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Web/connections/office365users",
+                                "connectionName": "office365users"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

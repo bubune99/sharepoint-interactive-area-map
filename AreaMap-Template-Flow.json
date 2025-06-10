@@ -1,0 +1,109 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Get_items": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/@{encodeURIComponent(string(parameters('siteUrl')))}/tables/@{encodeURIComponent('CAE List')}/items",
+                    "queries": {
+                        "$select": "Title,FirstName,LastName,PreferredFirstName,Email,JobTitle,Manager/Title,Manager/EMail,PrimaryAreaIDs,SecondaryAreaIDs",
+                        "$expand": "Manager"
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Get_template": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/@{encodeURIComponent(string(parameters('siteUrl')))}/files/@{encodeURIComponent('/SiteAssets/AreaMap/AreaMap.html')}/content"
+                },
+                "runAfter": {
+                    "Get_items": ["Succeeded"]
+                },
+                "type": "ApiConnection"
+            },
+            "Process_template": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "htmlContent",
+                            "type": "string",
+                            "value": "@body('Get_template')"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get_template": ["Succeeded"]
+                },
+                "type": "InitializeVariable"
+            },
+            "Replace_placeholders": {
+                "inputs": {
+                    "name": "htmlContent",
+                    "value": "@replace(replace(replace(variables('htmlContent'), '{{PERSONNEL_DATA}}', string(body('Get_items')?['value'])), '{{LAST_UPDATED}}', utcNow()), '{{TOTAL_PERSONNEL}}', string(length(body('Get_items')?['value'])))"
+                },
+                "runAfter": {
+                    "Process_template": ["Succeeded"]
+                },
+                "type": "SetVariable"
+            },
+            "Update_file": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "method": "put",
+                    "path": "/datasets/@{encodeURIComponent(string(parameters('siteUrl')))}/files/@{encodeURIComponent('/SiteAssets/AreaMap/AreaMap-Generated.html')}",
+                    "body": "@variables('htmlContent')"
+                },
+                "runAfter": {
+                    "Replace_placeholders": ["Succeeded"]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            },
+            "siteUrl": {
+                "defaultValue": "https://your-sharepoint-site.sharepoint.com/sites/your-site",
+                "type": "String"
+            }
+        },
+        "triggers": {
+            "When_an_item_is_created_or_modified": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "path": "/datasets/@{encodeURIComponent(string(parameters('siteUrl')))}/tables/@{encodeURIComponent('CAE List')}/ontrigger"
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "type": "ApiConnectionWebhook"
+            }
+        }
+    }
+}

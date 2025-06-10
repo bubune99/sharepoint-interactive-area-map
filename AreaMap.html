@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Map - Personnel Query</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f6fc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        /* Header styles */
+        .sharepoint-header {
+            background-color: #0078d4;
+            color: white;
+            padding: 10px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+        }
+        .sharepoint-title {
+            font-size: 18px;
+            font-weight: 600;  n
+        }
+        /* Map container styles */
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .svg-map {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* Query interface styles */
+        .controls-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        .control-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .control-input:focus {
+            border-color: #0078d4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+        }
+        /* Radio button styles */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .radio-label input[type="radio"] {
+            margin-right: 6px;
+            cursor: pointer;
+        }
+        /* Results styles */
+        .results-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .results-container h3 {
+            color: #0078d4;
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        .personnel-results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .personnel-results-list li {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .profile-container {
+            display: flex;
+            align-items: flex-start;
+            position: relative;
+            padding-top: 20px;
+        }
+        .profile-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            border: 1px solid #ddd;
+        }
+        .user-details {
+            flex: 1;
+        }
+        .person-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        .person-email {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .person-job {
+            font-size: 0.9em;
+            color: #444;
+            font-style: italic;
+            margin-bottom: 3px;
+        }
+        .person-manager {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .manager-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .manager-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+            background: #f8f8f8;
+            border-radius: 4px;
+        }
+        .manager-picture {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .manager-details {
+            flex: 1;
+        }
+        .manager-name {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #333;
+        }
+        .manager-title {
+            font-size: 0.8em;
+            color: #666;
+            font-style: italic;
+        }
+        .manager-email {
+            font-size: 0.8em;
+            color: #0078d4;
+        }
+        .person-areas {
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: #666;
+            font-style: italic;
+        }
+        .coverage-badge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+        }
+        .coverage-badge.primary {
+            background-color: #0078d4;
+        }
+        .coverage-badge.secondary {
+            background-color: #6b6b6b;
+        }
+        /* Button styles */
+        .control-button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .button-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+            margin-left: 10px;
+        }
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sharepoint-header">
+            <div class="sharepoint-title">Area Map - Personnel Query</div>
+        </div>
+        
+        <div class="map-container">
+            <!-- SVG Artboard Map -->
+            <object id="svg-map" class="svg-map" type="image/svg+xml" data="./Artboard 1.svg"></object>
+        </div>
+        
+        <!-- Query Interface -->
+        <div class="controls-container">
+            <div class="control-group">
+                <label class="control-label" for="region-select">Select Region:</label>
+                <select id="region-select" class="control-input">
+                    <option value="">-- Select Region --</option>
+                    <option value="East">East</option>
+                    <option value="Central">Central</option>
+                    <option value="West">West</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label" for="area-select">Select Area:</label>
+                <select id="area-select" class="control-input" disabled>
+                    <option value="">-- First Select Region --</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Coverage Type:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="all" checked>
+                        All
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="primary">
+                        Primary Only
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="secondary">
+                        Secondary Only
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="query-button" class="control-button">Search</button>
+                <button id="reset-button" class="control-button button-secondary">Reset</button>
+            </div>
+        </div>
+        
+        <!-- Results Container -->
+        <div class="results-container" style="display: none;">
+            <h3>Search Results</h3>
+            <div id="results-summary"></div>
+            <ul id="results-list" class="personnel-results-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        var personnelData = /*@SHAREPOINT_DATA@*/[
+            {
+                "Title": "John Smith",
+                "FirstName": "John",
+                "LastName": "Smith",
+                "PreferredFirstName": "Johnny",
+                "UserEmail": "john.smith@company.com",
+                "UserDepartment": "Sales",
+                "UserJobTitle": "Sales Engineer",
+                "PrimaryAreaIDs": ["A1", "A2"],
+                "SecondaryAreaIDs": ["B1"],
+                "Manager": {
+                    "DisplayName": "Jane Manager",
+                    "Email": "jane.manager@company.com",
+                    "Department": "Sales",
+                    "JobTitle": "Regional Manager"
+                }
+            },
+            {
+                "Title": "Jane Manager",
+                "FirstName": "Jane",
+                "LastName": "Manager",
+                "UserEmail": "jane.manager@company.com",
+                "UserDepartment": "Sales",
+                "UserJobTitle": "Regional Manager",
+                "PrimaryAreaIDs": ["B1", "B2", "B3"],
+                "SecondaryAreaIDs": [],
+                "Manager": {
+                    "DisplayName": "Tom Director",
+                    "Email": "tom.director@company.com",
+                    "Department": "Executive",
+                    "JobTitle": "Sales Director"
+                }
+            },
+            {
+                "Title": "Bob Wilson",
+                "FirstName": "Robert",
+                "LastName": "Wilson",
+                "PreferredFirstName": "Bob",
+                "UserEmail": "bob.wilson@company.com",
+                "UserDepartment": "Technical",
+                "UserJobTitle": "Support Engineer",
+                "PrimaryAreaIDs": ["C1"],
+                "SecondaryAreaIDs": ["A3", "A4"],
+                "Manager": {
+                    "DisplayName": "Jane Manager",
+                    "Email": "jane.manager@company.com",
+                    "Department": "Sales",
+                    "JobTitle": "Regional Manager"
+                }
+            }
+        ]/*@END_SHAREPOINT_DATA@*/;
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Personnel data:', personnelData);
+            initializeMap();
+            setupEventListeners();
+            
+            // Perform initial query to show all personnel
+            performQuery();
+        });
+                    const values = row.split(',').map(v => v.trim());
+                    const item = {};
+                    
+                console.error('Error loading personnel data:', error);
+                alert('Error loading personnel data. Please try refreshing the page.');
+            }
+        }
+
+            function formatPersonnelData(rawData) {
+                if (!Array.isArray(rawData)) {
+                    console.warn('Expected array of personnel data, got:', typeof rawData);
+                    return [];
+                }
+                
+                return rawData.map(function(item) {
+                    // Ensure we have an object
+                    if (!item || typeof item !== 'object') {
+                        console.warn('Invalid personnel item:', item);
+                        return null;
+                    }
+
+                    // Extract area IDs safely
+                    function getAreaIds(field) {
+                        if (Array.isArray(field)) return field;
+                        if (field && Array.isArray(field.results)) return field.results;
+                        return [];
+                    }
+
+                    // Create personnel object with safe defaults
+                    return {
+                        Title: String(item.Title || ''),
+                        FirstName: String(item.FirstName || ''),
+                        LastName: String(item.LastName || ''),
+                        PreferredFirstName: String(item.PreferredFirstName || ''),
+                        Email: String(item.Email || ''),
+                        ProfilePicture: (item.ProfilePicture && item.ProfilePicture.Url) ? 
+                            item.ProfilePicture.Url : '_layouts/15/userphoto.aspx?size=M',
+                        PrimaryAreaIDs: getAreaIds(item.PrimaryAreaIDs),
+                        SecondaryAreaIDs: getAreaIds(item.SecondaryAreaIDs),
+                        Manager: item.Manager || null,
+                        JobTitle: String(item.JobTitle || '')
+                    };
+                }).filter(Boolean); // Remove any null items
+            }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data injected by Power Automate
+            var rawData = @{body('Get_items')?['value']};
+            
+            // Format the data
+            personnelData = rawData.map(function(item) {
+                return {
+                    Title: item.Title || '',
+                    FirstName: item.FirstName || '',
+                    LastName: item.LastName || '',
+                    PreferredFirstName: item.PreferredFirstName || item.FirstName || '',
+                    Email: item.UserEmail || '',
+                    ProfilePicture: item.UserEmail ? 
+                        `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.UserEmail)}` :
+                        '_layouts/15/userphoto.aspx?size=M',
+                    Department: item.UserDepartment || '',
+                    JobTitle: item.UserJobTitle || '',
+                    PrimaryAreaIDs: Array.isArray(item.PrimaryAreaIDs) ? item.PrimaryAreaIDs :
+                                   (item.PrimaryAreaIDs?.results || []),
+                    SecondaryAreaIDs: Array.isArray(item.SecondaryAreaIDs) ? item.SecondaryAreaIDs :
+                                     (item.SecondaryAreaIDs?.results || []),
+                    Manager: item.ManagerDisplayName ? {
+                        DisplayName: item.ManagerDisplayName,
+                        Email: item.ManagerEmail || '',
+                        Department: item.ManagerDepartment || '',
+                        JobTitle: item.ManagerJobTitle || ''
+                    } : null
+                };
+            });
+            
+            initializeMap();
+            setupEventListeners();
+        });
+
+        // Initialize map and event handlers
+        function initializeMap() {
+            const svgObject = document.getElementById('svg-map');
+            
+            // Add error handling for SVG loading
+            svgObject.addEventListener('error', function(error) {
+                console.error('Error loading SVG:', error);
+                alert('Error loading the map. Please ensure the SVG file is in the same folder as this HTML file.');
+            });
+
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                if (!svgDoc) {
+                    console.error('Could not access SVG document');
+                    return;
+                }
+
+                // Add click handlers to all paths
+                const paths = svgDoc.querySelectorAll('path');
+                paths.forEach(path => {
+                    path.addEventListener('click', handleAreaClick);
+                    path.addEventListener('mouseenter', handleAreaHover);
+                    path.addEventListener('mouseleave', handleAreaLeave);
+                });
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Region select change handler
+            const regionSelect = document.getElementById('region-select');
+            const areaSelect = document.getElementById('area-select');
+
+            regionSelect.addEventListener('change', function(event) {
+                const region = event.target.value;
+                updateAreaDropdown(region);
+                // Auto-perform query when region changes
+                performQuery();
+            });
+
+            // Area select change handler
+            areaSelect.addEventListener('change', function() {
+                // Auto-perform query when area changes
+                performQuery();
+                    }
+                });
+
+                // Construct profile picture URL
+                const profilePicUrl = item.UserEmail ? 
+                    `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.UserEmail)}` : 
+                    '_layouts/15/userphoto.aspx?size=M';
+                        PreferredFirstName: item.PreferredFirstName || firstName || '',
+                        Email: userEmail || 'No email provided',
+                        ProfilePicture: profilePicUrl,
+                        Department: item.UserDepartment || 'Department not specified',
+                        JobTitle: item.UserJobTitle || 'Role not specified',
+                    PrimaryAreaIDs: Array.isArray(item.PrimaryAreaIDs) ? item.PrimaryAreaIDs : 
+                                   (item.PrimaryAreaIDs?.results || []),
+                        SecondaryAreaIDs: Array.isArray(item.SecondaryAreaIDs) ? item.SecondaryAreaIDs : 
+                                         (item.SecondaryAreaIDs?.results || []),
+                        Manager: item.ManagerDisplayName ? {
+                            DisplayName: item.ManagerDisplayName,
+                            Email: item.ManagerEmail || '',
+                            Picture: item.ManagerPicture || 
+                                    (item.ManagerEmail ? `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.ManagerEmail)}` : 
+                                    '_layouts/15/userphoto.aspx?size=M'),
+                            Department: item.ManagerDepartment || 'Department not specified',
+                            JobTitle: item.ManagerJobTitle || 'Role not specified'
+                        } : null,
+                        JobTitle: item.JobTitle || 'Role not specified'
+                    };
+                } catch (error) {
+                    console.error('Error processing personnel item:', error, item);
+                    return {
+                        Title: 'Error Processing Item',
+                        FirstName: '',
+                        LastName: '',
+                        PreferredFirstName: '',
+                        Email: '',
+                        ProfilePicture: '_layouts/15/userphoto.aspx?size=M',
+                        Department: '',
+                        JobTitle: '',
+                        PrimaryAreaIDs: [],
+                        SecondaryAreaIDs: [],
+                        Manager: null,
+                        Error: true
+                    };
+                }
+            });
+            })
+            .catch(error => {
+                console.error('Error loading personnel data:', error);
+            });
+        }
+
+        // Update area dropdown based on selected region
+        function updateAreaDropdown(region) {
+            const areaSelect = document.getElementById('area-select');
+            areaSelect.innerHTML = '<option value="">-- Select Area --</option>';
+            areaSelect.disabled = !region;
+
+            if (!region) return;
+
+            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
+            if (!svgDoc) return;
+
+            const regionGroup = svgDoc.querySelector(`#${region}`);
+            if (!regionGroup) return;
+
+            const paths = regionGroup.querySelectorAll('path');
+            const areas = Array.from(paths).map(path => {
+                const pathId = path.getAttribute('id');
+                if (!pathId) return null;
+
+                const parts = pathId.split('_');
+                if (parts.length < 2) return null;
+
+                return {
+                    id: pathId,
+                    name: parts[1].replace(/([A-Z])/g, ' $1').trim()
+                };
+            }).filter(area => area !== null);
+
+            areas.sort((a, b) => a.name.localeCompare(b.name));
+            areas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area.name;
+                option.textContent = area.name;
+                areaSelect.appendChild(option);
+            });
+        }
+
+        // Perform the query based on selected criteria
+        function performQuery() {
+            const region = document.getElementById('region-select').value;
+            const area = document.getElementById('area-select').value;
+            const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
+
+            clearAllHighlights();
+
+            // Always show results, even if no region selected
+            if (region) {
+                if (area) {
+                    highlightArea(region, area);
+                } else {
+                    highlightRegion(region);
+                }
+            }
+
+            displayQueryResults(region, area, coverageType);
+        }
+
+        // Reset the query form and clear highlights
+        function resetQuery() {
+            document.getElementById('region-select').value = '';
+            document.getElementById('area-select').value = '';
+            document.getElementById('area-select').disabled = true;
+            document.querySelector('input[name="coverage-type"][value="all"]').checked = true;
+
+            clearAllHighlights();
+            document.querySelector('.results-container').style.display = 'none';
+        }
+
+        // Clear all highlights from the map
+        function clearAllHighlights() {
+            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
+            if (!svgDoc) return;
+
+            const paths = svgDoc.querySelectorAll('path');
+            paths.forEach(path => {
+                path.classList.remove('selected');
+                path.classList.remove('hover');
+            });
+        }
+
+        // Highlight all areas in a specific region
+        function highlightRegion(region) {
+            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
+            if (!svgDoc) return;
+
+            const regionGroup = svgDoc.querySelector(`#${region}`);
+            if (!regionGroup) return;
+
+            const paths = regionGroup.querySelectorAll('path');
+            paths.forEach(path => {
+                path.classList.add('selected');
+            });
+        }
+
+        // Highlight a specific area
+        function highlightArea(region, area) {
+            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
+            if (!svgDoc) return;
+
+            const regionGroup = svgDoc.querySelector(`#${region}`);
+            if (!regionGroup) return;
+
+            const formattedAreaName = area.replace(/\s+/g, '');
+            const paths = regionGroup.querySelectorAll('path');
+            
+            for (const path of paths) {
+                const pathId = path.getAttribute('id');
+                if (!pathId) continue;
+
+                const nameParts = pathId.split('_');
+                if (nameParts.length < 2) continue;
+
+                if (nameParts[1].toLowerCase() === formattedAreaName.toLowerCase()) {
+                    path.classList.add('selected');
+                    break;
+                }
+            }
+        }
+
+        // Display query results
+        function displayQueryResults(region, area, coverageType) {
+            const resultsContainer = document.querySelector('.results-container');
+            const resultsSummary = document.getElementById('results-summary');
+            const resultsList = document.getElementById('results-list');
+
+            resultsContainer.style.display = 'block';
+            resultsList.innerHTML = '';
+
+            // Get matching personnel
+            const matchingPersonnel = findMatchingPersonnel(region, area, coverageType);
+            console.log('Matching personnel:', matchingPersonnel);
+            
+            // Update summary
+            let summaryText = '';
+            if (region) {
+                if (area) {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} - Area ${area}`;
+                } else {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} region`;
+                }
+                if (coverageType !== 'all') {
+                    summaryText += ` (${coverageType} coverage only)`;
+                }
+            } else {
+                summaryText = 'Showing all personnel';
+            }
+            resultsSummary.textContent = summaryText;
+
+            // Display each person
+            matchingPersonnel.forEach(person => {
+                const li = document.createElement('li');
+                li.className = 'personnel-item';
+
+                    if (coverageType === 'all') {
+                        const coverageBadge = document.createElement('div');
+                        coverageBadge.className = `coverage-badge ${person.coverageType}`;
+                        coverageBadge.textContent = person.coverageType === 'primary' ? 'Primary' : 'Secondary';
+                        profileContainer.appendChild(coverageBadge);
+                    }
+
+                    const profileImg = document.createElement('img');
+                    profileImg.className = 'profile-image';
+                    profileImg.src = person.ProfilePicture || '_layouts/15/userphoto.aspx?size=M';
+                    profileImg.alt = 'Profile';
+                    profileContainer.appendChild(profileImg);
+
+                    const userDetails = document.createElement('div');
+                    userDetails.className = 'user-details';
+
+                    const nameElement = document.createElement('div');
+                    nameElement.className = 'person-name';
+                    const displayFirstName = person.PreferredFirstName || person.FirstName;
+                    nameElement.textContent = `${displayFirstName} ${person.LastName}`;
+                    userDetails.appendChild(nameElement);
+
+                    const emailElement = document.createElement('div');
+                    emailElement.className = 'person-email';
+                    emailElement.textContent = person.Email;
+                    userDetails.appendChild(emailElement);
+
+                    if (person.JobTitle) {
+                        const jobElement = document.createElement('div');
+                        jobElement.className = 'person-job';
+                        jobElement.textContent = person.JobTitle;
+                        userDetails.appendChild(jobElement);
+                        if (person.Manager && person.Manager.DisplayName) {
+                            const managerContainer = document.createElement('div');
+                            managerContainer.className = 'person-manager';
+                            
+                            // Create manager info with picture
+                            const managerContent = `
+                                <div class="manager-info">
+                                    <img src="${person.Manager.Picture}" class="manager-picture" alt="Manager Picture">
+                                    <div class="manager-details">
+                                        <div class="manager-name">${person.Manager.DisplayName}</div>
+                                        <div class="manager-title">${person.Manager.JobTitle}</div>
+                                        <div class="manager-email">${person.Manager.Email}</div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            managerContainer.innerHTML = `<div class="manager-label">Manager:</div>${managerContent}`;
+                            userDetails.appendChild(managerContainer);
+                        }
+                    }
+
+                    const areasElement = document.createElement('div');
+                    areasElement.className = 'person-areas';
+                    const areasToShow = [];
+                    
+                    if (coverageType === 'all' || coverageType === 'primary') {
+                        const primaryAreas = formatAreasList(person.PrimaryAreaIDs);
+                        if (primaryAreas) {
+                            areasToShow.push(`Primary: ${primaryAreas}`);
+                        }
+                    }
+
+                    if (coverageType === 'all' || coverageType === 'secondary') {
+                        const secondaryAreas = formatAreasList(person.SecondaryAreaIDs);
+                        if (secondaryAreas) {
+                            areasToShow.push(`Secondary: ${secondaryAreas}`);
+                        }
+                    }
+
+                    areasElement.textContent = areasToShow.join(' | ');
+                    userDetails.appendChild(areasElement);
+
+                    profileContainer.appendChild(userDetails);
+                    listItem.appendChild(profileContainer);
+                    resultsList.appendChild(listItem);
+                });
+            } else {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = '<em>No personnel found matching the selected criteria</em>';
+                resultsList.appendChild(listItem);
+            }
+
+            resultsContainer.style.display = 'block';
+        }
+
+        // Find matching personnel
+        function findMatchingPersonnel(region, area, coverageType) {
+            console.log('Finding personnel for:', { region, area, coverageType });
+            console.log('Available personnel:', personnelData);
+
+            // If no region selected, return all personnel
+            if (!region) {
+                return personnelData.map(person => ({
+                    ...person,
+                    coverageType: 'all'
+                }));
+            }
+
+            const results = [];
+            
+            personnelData.forEach(person => {
+                // Get primary and secondary areas
+                const primaryAreas = Array.isArray(person.PrimaryAreaIDs) ? person.PrimaryAreaIDs : [];
+                const secondaryAreas = Array.isArray(person.SecondaryAreaIDs) ? person.SecondaryAreaIDs : [];
+
+                console.log('Checking person:', person.Title, { primaryAreas, secondaryAreas });
+
+                let isPrimary = false;
+                let isSecondary = false;
+
+                // Check if person matches the area criteria
+                if (area) {
+                    isPrimary = primaryAreas.includes(area);
+                    isSecondary = secondaryAreas.includes(area);
+                } else {
+                    // If no specific area, check if person has any areas in the region
+                    isPrimary = primaryAreas.some(areaId => areaId.startsWith(region[0]));
+                    isSecondary = secondaryAreas.some(areaId => areaId.startsWith(region[0]));
+                }
+
+                // Add person to results based on coverage type
+                if ((coverageType === 'all' && (isPrimary || isSecondary)) ||
+                    (coverageType === 'primary' && isPrimary) ||
+                    (coverageType === 'secondary' && isSecondary)) {
+                    results.push({
+                        ...person,
+                        coverageType: isPrimary ? 'primary' : 'secondary'
+                    });
+                }
+            });
+
+            console.log('Found matching personnel:', results);
+            return results;
+        }
+
+        // Format a list of area IDs into readable names
+        function formatAreasList(areaIDs) {
+            if (!Array.isArray(areaIDs) || areaIDs.length === 0) return '';
+
+            const areaNames = areaIDs.map(areaId => {
+                const parts = areaId.split('_');
+                if (parts.length < 2) return '';
+                return parts[1].replace(/([A-Z])/g, ' $1').trim();
+            }).filter(name => name !== '');
+
+            return areaNames.join(', ');
+        }
+
+        // Get region prefix letter
+        function getRegionPrefix(region) {
+            switch(region) {
+                case 'East': return 'A';
+                case 'Central': return 'B';
+                case 'West': return 'C';
+                default: return '';
+            }
+        }
+
+        // Handle area click events
+        function handleAreaClick(event) {
+            const path = event.target;
+            const pathId = path.getAttribute('id');
+            if (!pathId) return;
+
+            const parts = pathId.split('_');
+            if (parts.length < 2) return;
+
+            const regionPrefix = parts[0][0];
+            const region = getRegionName(regionPrefix);
+            const areaName = parts[1].replace(/([A-Z])/g, ' $1').trim();
+
+            document.getElementById('region-select').value = region;
+            updateAreaDropdown(region);
+            document.getElementById('area-select').value = areaName;
+            performQuery();
+        }
+
+        // Handle area hover events
+        function handleAreaHover(event) {
+            event.target.classList.add('hover');
+        }
+
+        // Handle area leave events
+        function handleAreaLeave(event) {
+            event.target.classList.remove('hover');
+        }
+
+        // Get region name from prefix
+        function getRegionName(prefix) {
+            switch(prefix) {
+                case 'A': return 'East';
+                case 'B': return 'Central';
+                case 'C': return 'West';
+                default: return '';
+            }
+        }
+    </script>
+</body>
+</html>

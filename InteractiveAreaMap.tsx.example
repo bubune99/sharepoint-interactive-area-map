@@ -1,0 +1,397 @@
+import * as React from 'react';
+import styles from './InteractiveAreaMap.module.scss';
+import { IInteractiveAreaMapProps } from './IInteractiveAreaMapProps';
+import { escape } from '@microsoft/sp-lodash-subset';
+
+// Import sub-components
+import MapContainer from './MapContainer/MapContainer';
+import ControlPanel from './ControlPanel/ControlPanel';
+import ZoomModal from './ZoomModal/ZoomModal';
+
+// Import SharePoint API utilities
+import { SPHttpClient } from '@microsoft/sp-http';
+
+// Define the component state interface
+export interface IInteractiveAreaMapState {
+  selectedRegion: string;
+  selectedArea: string;
+  zoomedImage: {
+    visible: boolean;
+    src: string;
+    alt: string;
+    region: string;
+    area: string;
+  };
+  isLoading: boolean;
+  error: string | null;
+}
+
+export default class InteractiveAreaMap extends React.Component<IInteractiveAreaMapProps, IInteractiveAreaMapState> {
+  constructor(props: IInteractiveAreaMapProps) {
+    super(props);
+    
+    // Initialize state
+    this.state = {
+      selectedRegion: '',
+      selectedArea: '',
+      zoomedImage: {
+        visible: false,
+        src: '',
+        alt: '',
+        region: '',
+        area: ''
+      },
+      isLoading: this.props.isLoading,
+      error: null
+    };
+    
+    // Bind methods
+    this.handleRegionSelect = this.handleRegionSelect.bind(this);
+    this.handleAreaSelect = this.handleAreaSelect.bind(this);
+    this.handleAreaClick = this.handleAreaClick.bind(this);
+    this.handleAreaDoubleClick = this.handleAreaDoubleClick.bind(this);
+    this.handleCloseZoom = this.handleCloseZoom.bind(this);
+    this.handleAssignmentSubmit = this.handleAssignmentSubmit.bind(this);
+    this.handleRefreshData = this.handleRefreshData.bind(this);
+  }
+
+  // When component receives new props
+  public componentDidUpdate(prevProps: IInteractiveAreaMapProps): void {
+    // Update loading state when props change
+    if (prevProps.isLoading !== this.props.isLoading) {
+      this.setState({ isLoading: this.props.isLoading });
+    }
+  }
+
+  // Handle region selection
+  private handleRegionSelect(regionName: string): void {
+    this.setState({
+      selectedRegion: regionName,
+      selectedArea: '' // Clear selected area when region changes
+    });
+  }
+
+  // Handle area selection
+  private handleAreaSelect(areaName: string): void {
+    this.setState({
+      selectedArea: areaName
+    });
+  }
+
+  // Handle area click
+  private handleAreaClick(regionName: string, areaName: string): void {
+    this.setState({
+      selectedRegion: regionName,
+      selectedArea: areaName
+    });
+  }
+
+  // Handle area double-click for zoom
+  private handleAreaDoubleClick(imageUrl: string, alt: string, regionName: string, areaName: string): void {
+    if (this.props.properties.enableZoom) {
+      this.setState({
+        zoomedImage: {
+          visible: true,
+          src: imageUrl,
+          alt: alt,
+          region: regionName,
+          area: areaName
+        }
+      });
+    }
+  }
+
+  // Handle closing the zoom modal
+  private handleCloseZoom(): void {
+    this.setState({
+      zoomedImage: {
+        ...this.state.zoomedImage,
+        visible: false
+      }
+    });
+  }
+
+  // Handle assignment form submission
+  private async handleAssignmentSubmit(formData: any): Promise<void> {
+    try {
+      this.setState({ isLoading: true });
+      
+      // Determine how to handle the submission based on data source type
+      switch (this.props.properties.dataSourceType) {
+        case 'sharePointLists':
+          await this.submitToSharePoint(formData);
+          break;
+        case 'powerAutomate':
+          await this.submitToPowerAutomate(formData);
+          break;
+        default:
+          console.log('Form submitted with data:', formData);
+          // For direct input, just log the data
+          break;
+      }
+      
+      // Refresh data after submission
+      if (this.props.onRefreshData) {
+        await this.props.onRefreshData();
+      }
+      
+      this.setState({ isLoading: false, error: null });
+    } catch (error) {
+      console.error('Error submitting assignment:', error);
+      this.setState({ 
+        isLoading: false, 
+        error: 'Error submitting assignment. Please try again.' 
+      });
+    }
+  }
+
+  // Submit assignment to SharePoint list
+  private async submitToSharePoint(formData: any): Promise<void> {
+    const { webpartContext, properties } = this.props;
+    const siteUrl = properties.customSiteUrl || webpartContext.pageContext.web.absoluteUrl;
+    
+    // Find the area ID based on region and area name
+    const area = this.props.areas.find(a => 
+      a.regionTitle === formData.region && a.title === formData.area
+    );
+    
+    if (!area) {
+      throw new Error(`Area not found: ${formData.region} - ${formData.area}`);
+    }
+    
+    // Create the assignment item
+    const assignmentItem = {
+      Title: `${formData.employee} - ${formData.region} - ${formData.area}`,
+      AreaId: area.id,
+      EmployeeId: { results: [this.getUserIdByName(formData.employee)] }, // Assuming this method exists
+      StartDate: formData.startDate,
+      Notes: formData.notes
+    };
+    
+    // Submit to SharePoint list
+    const endpoint = `${siteUrl}/_api/web/lists/getbytitle('${properties.personnelAssignmentsListName}')/items`;
+    const response = await webpartContext.spHttpClient.post(
+      endpoint,
+      SPHttpClient.configurations.v1,
+      {
+        headers: {
+          'Accept': 'application/json;odata=nometadata',
+          'Content-type': 'application/json;odata=nometadata',
+          'odata-version': ''
+        },
+        body: JSON.stringify(assignmentItem)
+      }
+    );
+    
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(`Error creating assignment: ${response.status} ${response.statusText} ${responseText}`);
+    }
+  }
+
+  // Submit assignment to Power Automate flow
+  private async submitToPowerAutomate(formData: any): Promise<void> {
+    if (this.props.onTriggerFlow) {
+      const result = await this.props.onTriggerFlow({
+        action: 'createAssignment',
+        formData
+      });
+      
+      if (!result || result.error) {
+        throw new Error(result?.error || 'Error submitting to Power Automate');
+      }
+    } else {
+      throw new Error('Power Automate trigger function not available');
+    }
+  }
+
+  // Handle data refresh
+  private async handleRefreshData(): Promise<void> {
+    try {
+      this.setState({ isLoading: true });
+      
+      if (this.props.onRefreshData) {
+        await this.props.onRefreshData();
+      }
+      
+      this.setState({ isLoading: false, error: null });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      this.setState({ 
+        isLoading: false, 
+        error: 'Error refreshing data. Please try again.' 
+      });
+    }
+  }
+
+  // Helper method to get user ID by name (would need to be implemented)
+  private getUserIdByName(userName: string): number {
+    // This is a placeholder - in a real implementation, you would look up the user ID
+    // from the SharePoint User Information List or use PnP JS
+    return 1; // Placeholder
+  }
+
+  public render(): React.ReactElement<IInteractiveAreaMapProps> {
+    const { properties, regions, areas, personnelAssignments, mapImages, isDarkTheme } = this.props;
+    const { selectedRegion, selectedArea, zoomedImage, isLoading, error } = this.state;
+    
+    // Determine CSS classes based on properties
+    const containerClassName = `${styles.interactiveAreaMap} ${isDarkTheme ? styles.darkTheme : ''}`;
+    
+    // Determine map size class
+    let mapSizeClass = styles.mediumMap; // Default
+    switch (properties.mapSize) {
+      case 'small':
+        mapSizeClass = styles.smallMap;
+        break;
+      case 'large':
+        mapSizeClass = styles.largeMap;
+        break;
+      case 'custom':
+        mapSizeClass = styles.customMap;
+        break;
+    }
+    
+    // Apply custom styles if needed
+    const customStyles: React.CSSProperties = {};
+    if (properties.mapSize === 'custom') {
+      customStyles.width = properties.customWidth || '100%';
+      customStyles.height = properties.customHeight || 'auto';
+    }
+    
+    // Get selected region and area data
+    const selectedRegionData = regions.find(r => r.title === selectedRegion);
+    const selectedAreaData = areas.find(a => a.regionTitle === selectedRegion && a.title === selectedArea);
+    
+    // Get personnel for selected area
+    const areaPersonnel = personnelAssignments.filter(p => 
+      p.regionTitle === selectedRegion && p.areaTitle === selectedArea
+    );
+
+    return (
+      <div className={containerClassName} style={customStyles}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>{properties.mapTitle}</h2>
+          <div className={styles.controls}>
+            <button 
+              className={styles.refreshButton} 
+              onClick={this.handleRefreshData}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : 'Refresh Data'}
+            </button>
+          </div>
+        </div>
+        
+        {error && (
+          <div className={styles.errorMessage}>
+            {error}
+          </div>
+        )}
+        
+        <div className={`${styles.mapContainer} ${mapSizeClass}`}>
+          {isLoading ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.spinner}></div>
+              <p>Loading map data...</p>
+            </div>
+          ) : (
+            <MapContainer 
+              regions={regions}
+              areas={areas}
+              mapImages={mapImages}
+              selectedRegion={selectedRegion}
+              selectedArea={selectedArea}
+              enableHoverEffects={properties.enableHoverEffects}
+              showRegionLabels={properties.showRegionLabels}
+              colorScheme={properties.colorScheme}
+              customColors={{
+                region1: properties.region1Color,
+                region2: properties.region2Color,
+                region3: properties.region3Color,
+                highlight: properties.highlightColor,
+                selected: properties.selectedColor
+              }}
+              onRegionSelect={this.handleRegionSelect}
+              onAreaSelect={this.handleAreaClick}
+              onAreaDoubleClick={this.handleAreaDoubleClick}
+            />
+          )}
+          
+          {selectedRegionData && (
+            <div className={styles.infoPanel}>
+              <h3>{selectedRegionData.title}</h3>
+              {selectedAreaData ? (
+                <>
+                  <h4>{selectedAreaData.title}</h4>
+                  <p>{selectedAreaData.description}</p>
+                  
+                  <div className={styles.personnelSection}>
+                    <h4>Assigned Personnel ({areaPersonnel.length})</h4>
+                    {areaPersonnel.length > 0 ? (
+                      <ul className={styles.personnelList}>
+                        {areaPersonnel.map(person => (
+                          <li key={person.id} className={styles.personnelItem}>
+                            <span className={styles.personName}>{person.employeeName}</span>
+                            {person.startDate && (
+                              <span className={styles.personDate}>
+                                Since: {new Date(person.startDate).toLocaleDateString()}
+                              </span>
+                            )}
+                            {person.notes && (
+                              <p className={styles.personNotes}>{person.notes}</p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.noPersonnel}>No personnel assigned to this area</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p>Select an area to view details</p>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <ControlPanel 
+          regions={regions}
+          areas={areas.filter(a => a.regionTitle === selectedRegion)}
+          selectedRegion={selectedRegion}
+          selectedArea={selectedArea}
+          onRegionSelect={this.handleRegionSelect}
+          onAreaSelect={this.handleAreaSelect}
+          onSubmit={this.handleAssignmentSubmit}
+          isLoading={isLoading}
+        />
+        
+        {properties.enableZoom && (
+          <ZoomModal 
+            visible={zoomedImage.visible}
+            imageUrl={zoomedImage.src}
+            imageAlt={zoomedImage.alt}
+            regionName={zoomedImage.region}
+            areaName={zoomedImage.area}
+            personnel={areaPersonnel}
+            onClose={this.handleCloseZoom}
+          />
+        )}
+        
+        {properties.debugMode && (
+          <div className={styles.debugPanel}>
+            <h3>Debug Information</h3>
+            <p>Data Source: {properties.dataSourceType}</p>
+            <p>Selected Region: {selectedRegion}</p>
+            <p>Selected Area: {selectedArea}</p>
+            <p>Regions Count: {regions.length}</p>
+            <p>Areas Count: {areas.length}</p>
+            <p>Personnel Count: {personnelAssignments.length}</p>
+            <p>Images Count: {mapImages.length}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+}

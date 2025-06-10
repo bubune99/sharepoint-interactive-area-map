@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Area Map - Interactive Mockup</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- SharePoint REST API support -->
+    <script type="text/javascript" src="/_layouts/15/MicrosoftAjax.js"></script>
+    <script type="text/javascript" src="/_layouts/15/sp.runtime.js"></script>
+    <script type="text/javascript" src="/_layouts/15/sp.js"></script>
+    <!-- Power Fx Integration -->
+    <script type="text/javascript" src="power-automate-integration.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="sharepoint-header">
+            <div class="sharepoint-logo">📍</div>
+            <div class="sharepoint-title">Area Management Dashboard</div>
+        </div>
+        
+        <h1>US Area Map</h1>
+        
+        <div class="map-container">
+            <!-- Background image layer - will be populated from SharePoint -->
+            <img src="" class="background-map" alt="Background Map">
+            
+            <!-- SVG Artboard Map -->
+            <object id="svg-map" class="svg-map" type="image/svg+xml" data="images/Artboard 1.svg"></object>
+            
+            <!-- Region layers -->
+            <div class="region-layers">
+                <!-- Region 1 with 7 areas -->
+                <div class="region" data-region="Region 1">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 1" alt="Region 1 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 2" alt="Region 1 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 3" alt="Region 1 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 4" alt="Region 1 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 5" alt="Region 1 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 6" alt="Region 1 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 1" data-area="Area 7" alt="Region 1 - Area 7">
+                </div>
+                
+                <!-- Region 2 with 8 areas -->
+                <div class="region" data-region="Region 2">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 1" alt="Region 2 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 2" alt="Region 2 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 3" alt="Region 2 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 4" alt="Region 2 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 5" alt="Region 2 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 6" alt="Region 2 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 7" alt="Region 2 - Area 7">
+                    <img src="" class="area-layer" data-region="Region 2" data-area="Area 8" alt="Region 2 - Area 8">
+                </div>
+                
+                <!-- Region 3 with 7 areas -->
+                <div class="region" data-region="Region 3">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 1" alt="Region 3 - Area 1">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 2" alt="Region 3 - Area 2">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 3" alt="Region 3 - Area 3">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 4" alt="Region 3 - Area 4">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 5" alt="Region 3 - Area 5">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 6" alt="Region 3 - Area 6">
+                    <img src="" class="area-layer" data-region="Region 3" data-area="Area 7" alt="Region 3 - Area 7">
+                </div>
+            </div>
+            
+            <!-- Information Panel -->
+            <div class="info-panel" id="info-panel">
+                <h3 id="region-title">Region Name</h3>
+                <div id="area-title">Area Name</div>
+                <div class="personnel-count" id="personnel-count"></div>
+                <div id="region-personnel">
+                    <ul id="personnel-list">
+                        <!-- Personnel list will be populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Zoom Modal -->
+        <div id="zoom-modal" class="zoom-modal">
+            <button id="close-modal" class="close-modal">×</button>
+            <img id="enlarged-area" class="enlarged-area" src="" alt="Enlarged Area">
+            <div id="modal-info" class="modal-info"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color normal"></div>
+                <span>Default</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color hover"></div>
+                <span>Hover</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color selected"></div>
+                <span>Selected</span>
+            </div>
+        </div>
+        
+        <!-- SharePoint-like Controls -->
+        <div class="controls-container">
+            <h3>Area Query Interface</h3>
+            <p>Use the form below to query regions and areas. Data is automatically synchronized with the SharePoint list.</p>
+            
+            <div class="control-group">
+                <label class="control-label" for="region-select">Select Region:</label>
+                <select id="region-select" class="control-input">
+                    <option value="">-- Select Region --</option>
+                    <option value="East">East</option>
+                    <option value="Central">Central</option>
+                    <option value="West">West</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label" for="area-select">Select Area:</label>
+                <select id="area-select" class="control-input" disabled>
+                    <option value="">-- First Select Region --</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Coverage Type:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="all" checked>
+                        All
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="primary">
+                        Primary Only
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage-type" value="secondary">
+                        Secondary Only
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="query-button" class="control-button">Search</button>
+                <button id="reset-button" class="button button-secondary">Reset</button>
+                <!-- Hidden field for Power Fx to read -->
+                <input type="hidden" id="power-fx-data" value="{}">
+            </div>
+        </div>
+        
+        <!-- Results Container -->
+        <div class="results-container" style="display: none;">
+            <h3>Search Results</h3>
+            <div id="results-summary"></div>
+            <ul id="results-list" class="personnel-results-list"></ul>
+        </div>
+        
+        <!-- Image Management Section (For Administrators) -->
+        <div class="controls-container admin-section">
+            <h3>Image Management</h3>
+            <p>This section is for administrators to manage map images. In the production environment, use the SharePoint list instead.</p>
+            
+            <div class="control-group">
+                <a href="sharepoint-image-list-schema.json" target="_blank" class="button">View SharePoint Image List Schema</a>
+            </div>
+            
+            <div class="control-group">
+                <p>To update map images:</p>
+                <ol>
+                    <li>Go to the SharePoint list "MapImages"</li>
+                    <li>Upload new images using the standard SharePoint interface</li>
+                    <li>Set the correct ImageType and AreaNumber values</li>
+                    <li>Refresh this page to see the changes</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the SharePoint integration JavaScript -->
+    <script src="sharepoint-integration.js"></script>
+
+    <script>
+        // Sample data - this would come from SharePoint list in the real implementation
+        const regionData = {
+            "East": {
+                areas: ["Baltimore Coast", "South East", "New England", "New York", "Philadelphia", "Gulf Coast", "Florida"],
+                personnel: [
+                    { name: "John Smith", area: "Baltimore Coast" },
+                    { name: "Sarah Johnson", area: "South East" },
+                    { name: "Michael Brown", area: "New England" },
+                    { name: "Emily Davis", area: "New York" },
+                    { name: "David Wilson", area: "Philadelphia" }
+                ]
+            },
+            "Central": {
+                areas: ["Chicago", "Michigan", "Ohio Valley", "Central Plains", "North Central", "Nashville", "St Louiser", "Tulsa"],
+                personnel: [
+                    { name: "Jennifer Lee", area: "Chicago" },
+                    { name: "Robert Taylor", area: "Michigan" },
+                    { name: "Jessica Martinez", area: "Ohio Valley" },
+                    { name: "Thomas Anderson", area: "Central Plains" },
+                    { name: "Amanda White", area: "North Central" }
+                ]
+            },
+            "West": {
+                areas: ["Denver", "Dallas", "Houston", "Phoenix", "Northern California", "Seattle", "Los Angeles"],
+                personnel: [
+                    { name: "Christopher Clark", area: "Denver" },
+                    { name: "Melissa Rodriguez", area: "Dallas" },
+                    { name: "Daniel Thompson", area: "Houston" },
+                    { name: "Stephanie Lewis", area: "Phoenix" },
+                    { name: "Kevin Walker", area: "Northern California" }
+                ]
+            }
+        };
+
+        // Initialize the map when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get modal elements
+            const zoomModal = document.getElementById('zoom-modal');
+            const enlargedArea = document.getElementById('enlarged-area');
+            const modalInfo = document.getElementById('modal-info');
+            const closeModal = document.getElementById('close-modal');
+            
+            // Close modal when clicking the close button
+            closeModal.addEventListener('click', function() {
+                zoomModal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside the image
+            zoomModal.addEventListener('click', function(event) {
+                if (event.target === zoomModal) {
+                    zoomModal.style.display = 'none';
+                }
+            });
+            
+            // Add click event for persistent selection
+            const areaLayers = document.querySelectorAll('.area-layer');
+            areaLayers.forEach(area => {
+                // Single click to select
+                area.addEventListener('click', function(event) {
+                    // Remove selected class from all areas
+                    document.querySelectorAll('.area-layer').forEach(a => {
+                        a.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked area
+                    this.classList.add('selected');
+                    
+                    // Show area info
+                    showAreaInfo(event);
+                    
+                    // Update region and area select dropdowns
+                    const regionName = this.getAttribute('data-region');
+                    const areaName = this.getAttribute('data-area');
+                    document.getElementById('region-select').value = regionName;
+                    
+                    // Update area dropdown
+                    updateAreaDropdown(regionName, areaName);
+                });
+                
+                // Double click to zoom
+                area.addEventListener('dblclick', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // Get area information
+                    const regionName = this.getAttribute('data-region');
+                    const areaName = this.getAttribute('data-area');
+                    
+                    // Set the enlarged image
+                    enlargedArea.src = this.src;
+                    enlargedArea.alt = `${regionName} - ${areaName}`;
+                    
+                    // Create info content for the modal
+                    let infoHTML = `<h3>${regionName} - ${areaName}</h3>`;
+                    
+                    // Add personnel info
+                    if (regionData[regionName]) {
+                        const areaPersonnel = regionData[regionName].personnel.filter(person => person.area === areaName);
+                        infoHTML += `<div class="modal-personnel-count">${areaPersonnel.length} team members assigned</div>`;
+                        
+                        if (areaPersonnel.length > 0) {
+                            infoHTML += '<ul>';
+                            areaPersonnel.forEach(person => {
+                                infoHTML += `<li><span class="person-name">${person.name}</span></li>`;
+                            });
+                            infoHTML += '</ul>';
+                        } else {
+                            infoHTML += '<p><em>No team members assigned to this area</em></p>';
+                        }
+                    }
+                    
+                    // Set modal info content
+                    modalInfo.innerHTML = infoHTML;
+                    
+                    // Show the modal
+                    zoomModal.style.display = 'flex';
+                });
+                
+                // Add hover event
+                area.addEventListener('mouseover', function(event) {
+                    this.classList.add('hover');
+                });
+                
+                area.addEventListener('mouseout', function(event) {
+                    this.classList.remove('hover');
+                });
+            });
+            
+            // Set up region select change event
+            document.getElementById('region-select').addEventListener('change', function() {
+                const regionName = this.value;
+                
+                // Update area dropdown
+                updateAreaDropdown(regionName);
+                
+                // Update map selection - deselect all areas
+                document.querySelectorAll('.area-layer').forEach(a => {
+                    a.classList.remove('selected');
+                });
+                
+                if (regionName) {
+                    // Show region info without selecting a specific area
+                    showRegionInfo(regionName);
+                } else {
+                    // Hide info panel if no region selected
+                    document.getElementById('info-panel').style.display = 'none';
+                }
+            });
+            
+            // Set up area select change event
+            document.getElementById('area-select').addEventListener('change', function() {
+                const regionName = document.getElementById('region-select').value;
+                const areaName = this.value;
+                
+                // Update map selection
+                document.querySelectorAll('.area-layer').forEach(a => {
+                    a.classList.remove('selected');
+                });
+                
+                if (areaName) {
+                    const areaElement = document.querySelector(`.area-layer[data-region="${regionName}"][data-area="${areaName}"]`);
+                    if (areaElement) {
+                        areaElement.classList.add('selected');
+                        
+                        // Show area info
+                        const event = { target: areaElement };
+                        showAreaInfo(event);
+                    }
+                } else if (regionName) {
+                    // Show region info without selecting a specific area
+                    showRegionInfo(regionName);
+                } else {
+                    // Hide info panel if no region or area selected
+                    document.getElementById('info-panel').style.display = 'none';
+                }
+            });
+            
+            // Set up submit button for Power Fx integration
+            document.getElementById('submit-button').addEventListener('click', function() {
+                const region = document.getElementById('region-select').value;
+                const area = document.getElementById('area-select').value;
+                const employee = document.getElementById('employee-select').value;
+                const startDate = document.getElementById('start-date') ? document.getElementById('start-date').value : '';
+                const notes = document.getElementById('notes') ? document.getElementById('notes').value : '';
+                
+                if (!region || !area || !employee) {
+                    alert('Please select a region, area, and employee.');
+                    return;
+                }
+                
+                // Call the Power Fx integration function
+                if (window.PowerFxMap && typeof window.PowerFxMap.submitAssignmentToPowerFx === 'function') {
+                    // Use the Power Fx integration
+                    window.PowerFxMap.submitAssignmentToPowerFx();
+                } else {
+                    // Fallback for when Power Fx integration is not available
+                    alert(`Assignment created:\nRegion: ${region}\nArea: ${area}\nEmployee: ${employee}`);
+                    
+                    // Clear form
+                    document.getElementById('employee-select').value = '';
+                }
+            });
+            
+            // Set up remove button
+            document.getElementById('remove-button').addEventListener('click', function() {
+                const region = document.getElementById('region-select').value;
+                const employee = document.getElementById('employee-select').value;
+                
+                if (!region || !employee) {
+                    alert('Please select a region and employee to remove.');
+                    return;
+                }
+                
+                // In a real implementation, this would update the SharePoint list
+                // For the mockup, we'll just show a confirmation message
+                alert(`Assignment removed:\nRegion: ${region}\nEmployee: ${employee}`);
+            });
+            
+            // Add keyboard support for closing modal with Escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && zoomModal.style.display === 'flex') {
+                    zoomModal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Function to update area dropdown based on selected region
+        function updateAreaDropdown(regionName, selectedArea = '') {
+            const areaSelect = document.getElementById('area-select');
+            areaSelect.innerHTML = '';
+            
+            if (regionName && regionData[regionName]) {
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Select Area --';
+                areaSelect.appendChild(defaultOption);
+                
+                // Add areas for the selected region
+                regionData[regionName].areas.forEach(areaName => {
+                    const option = document.createElement('option');
+                    option.value = areaName;
+                    option.textContent = areaName;
+                    areaSelect.appendChild(option);
+                });
+                
+                areaSelect.disabled = false;
+                
+                // Set the selected area if provided
+                if (selectedArea) {
+                    areaSelect.value = selectedArea;
+                }
+            } else {
+                // No region selected, disable area dropdown
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- First Select Region --';
+                areaSelect.appendChild(defaultOption);
+                areaSelect.disabled = true;
+            }
+        }
+
+        // Show area information on click
+        function showAreaInfo(event) {
+            let areaElement = event.target;
+            
+            // Get the region and area names
+            const regionName = areaElement.getAttribute('data-region');
+            const areaName = areaElement.getAttribute('data-area');
+            const infoPanel = document.getElementById('info-panel');
+            const regionTitle = document.getElementById('region-title');
+            const areaTitle = document.getElementById('area-title');
+            const personnelList = document.getElementById('personnel-list');
+            const personnelCount = document.getElementById('personnel-count');
+            
+            // Update info panel content
+            regionTitle.textContent = regionName;
+            areaTitle.textContent = areaName;
+            personnelList.innerHTML = '';
+            
+            // Add personnel to the list
+            if (regionData[regionName]) {
+                // Filter personnel for this specific area
+                const areaPersonnel = regionData[regionName].personnel.filter(person => person.area === areaName);
+                personnelCount.textContent = `${areaPersonnel.length} team members assigned`;
+                
+                if (areaPersonnel.length > 0) {
+                    areaPersonnel.forEach(person => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `<span class="person-name">${person.name}</span>`;
+                        personnelList.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<em>No team members assigned to this area</em>`;
+                    personnelList.appendChild(listItem);
+                }
+            }
+            
+            // Show the info panel
+            infoPanel.style.display = 'block';
+            
+            // Prevent the event from bubbling up
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            }
+        }
+        
+        // Show region information without a specific area
+        function showRegionInfo(regionName) {
+            const infoPanel = document.getElementById('info-panel');
+            const regionTitle = document.getElementById('region-title');
+            const areaTitle = document.getElementById('area-title');
+            const personnelList = document.getElementById('personnel-list');
+            const personnelCount = document.getElementById('personnel-count');
+            
+            // Update info panel content
+            regionTitle.textContent = regionName;
+            areaTitle.textContent = "All Areas";
+            personnelList.innerHTML = '';
+            
+            // Add personnel to the list
+            if (regionData[regionName]) {
+                const personnel = regionData[regionName].personnel;
+                personnelCount.textContent = `${personnel.length} team members assigned`;
+                
+                personnel.forEach(person => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<span class="area-name">${person.area}:</span> <span class="person-name">${person.name}</span>`;
+                    personnelList.appendChild(listItem);
+                });
+            }
+            
+            // Show the info panel
+            infoPanel.style.display = 'block';
+        }
+        
+        // Add event listener to hide panel when clicking outside the map
+        document.addEventListener('click', function(event) {
+            const mapContainer = document.querySelector('.map-container');
+            const infoPanel = document.getElementById('info-panel');
+            
+            if (!mapContainer.contains(event.target)) {
+                document.querySelectorAll('.area-layer').forEach(area => {
+                    area.classList.remove('selected');
+                });
+                infoPanel.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <!-- SVG Artboard Interaction Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the SVG object
+            const svgObject = document.getElementById('svg-map');
+            
+            // Wait for the SVG to load
+            svgObject.addEventListener('load', function() {
+                // Get the SVG document
+                const svgDoc = svgObject.contentDocument;
+                
+                // Region mapping based on path IDs
+                // The first letter in the path ID corresponds to the region (A=East, B=Central, C=West)
+                // The number after the letter corresponds to the area number
+                const regionMapping = {};
+                
+                // Function to extract region and area from path ID
+                function mapPathIdToRegionArea(pathId) {
+                    if (!pathId || pathId.length < 3) return null;
+                    
+                    const regionLetter = pathId.charAt(0);
+                    let regionName, areaName;
+                    
+                    // Map region letter to region name
+                    switch(regionLetter) {
+                        case 'A':
+                            regionName = 'East';
+                            break;
+                        case 'B':
+                            regionName = 'Central';
+                            break;
+                        case 'C':
+                            regionName = 'West';
+                            break;
+                        default:
+                            return null;
+                    }
+                    
+                    // Extract the descriptive part of the area name after the underscore
+                    // For example, from 'A06_GulfCoast', extract 'GulfCoast'
+                    const nameParts = pathId.split('_');
+                    if (nameParts.length > 1) {
+                        // Format the area name with spaces before capital letters
+                        // For example, convert 'GulfCoast' to 'Gulf Coast'
+                        areaName = nameParts[1].replace(/([A-Z])/g, ' $1').trim();
+                        
+                        // Capitalize the first letter if it's not already
+                        areaName = areaName.charAt(0).toUpperCase() + areaName.slice(1);
+                    } else {
+                        // Fallback if no underscore in the ID
+                        areaName = 'Area ' + pathId.substring(1, 3);
+                    }
+                    
+                    return {
+                        regionId: regionName,
+                        areaId: areaName
+                    };
+                }
+                
+                // Find all paths in each region group
+                const eastGroup = svgDoc.querySelector('#East');
+                const centralGroup = svgDoc.querySelector('#Central');
+                const westGroup = svgDoc.querySelector('#West');
+                
+                // Process each group
+                processRegionGroup(eastGroup);
+                processRegionGroup(centralGroup);
+                processRegionGroup(westGroup);
+                
+                // Function to process each region group
+                function processRegionGroup(groupElement) {
+                    if (!groupElement) return;
+                    
+                    const paths = groupElement.querySelectorAll('path');
+                    paths.forEach(path => {
+                        // Add class for styling
+                        path.classList.add('svg-region');
+                        
+                        // Get path ID
+                        const pathId = path.getAttribute('id');
+                        if (!pathId) return;
+                        
+                        // Map to region and area using the path ID
+                        const regionArea = mapPathIdToRegionArea(pathId);
+                        if (!regionArea) return;
+                        
+                        // Set data attributes for region and area
+                        path.setAttribute('data-region', regionArea.regionId);
+                        path.setAttribute('data-area', regionArea.areaId);
+                        
+                        // Add hover event listeners
+                        path.addEventListener('mouseenter', function(e) {
+                            // Apply hover styles
+                            path.style.opacity = '0.8';
+                            path.style.filter = 'brightness(1.2) saturate(1.2)';
+                            path.style.transform = 'scale(1.01)';
+                            path.style.transformOrigin = 'center';
+                        });
+                        
+                        path.addEventListener('mouseleave', function(e) {
+                            // Remove hover styles if not selected
+                            if (!path.classList.contains('selected')) {
+                                path.style.opacity = '';
+                                path.style.filter = '';
+                                path.style.transform = '';
+                            }
+                        });
+                        
+                        // Add click event to show region info
+                        path.addEventListener('click', function(e) {
+                            // Reset all paths
+                            const allPaths = svgDoc.querySelectorAll('path');
+                            allPaths.forEach(p => {
+                                p.classList.remove('selected');
+                                p.style.opacity = '';
+                                p.style.filter = '';
+                                p.style.transform = '';
+                                p.style.stroke = '';
+                                p.style.strokeWidth = '';
+                            });
+                            
+                            // Add selected class to clicked path
+                            path.classList.add('selected');
+                            path.style.opacity = '1';
+                            path.style.filter = 'brightness(1.3) saturate(1.5)';
+                            path.style.transform = 'scale(1.03)';
+                            path.style.transformOrigin = 'center';
+                            path.style.stroke = '#0078d4';
+                            path.style.strokeWidth = '1px';
+                            
+                            // Get region and area data
+                            const regionName = path.getAttribute('data-region');
+                            const areaName = path.getAttribute('data-area');
+                            
+                            // Show region information in the info panel
+                            const infoPanel = document.getElementById('info-panel');
+                            const regionTitle = document.getElementById('region-title');
+                            const areaTitle = document.getElementById('area-title');
+                            const personnelList = document.getElementById('personnel-list');
+                            const personnelCount = document.getElementById('personnel-count');
+                            
+                            // Update info panel content
+                            regionTitle.textContent = regionName;
+                            areaTitle.textContent = areaName;
+                            personnelList.innerHTML = '';
+                            
+                            // Check if we have personnel data for this region/area
+                            if (window.regionData && window.regionData[regionName]) {
+                                const areaPersonnel = window.regionData[regionName].personnel.filter(person => person.area === areaName);
+                                personnelCount.textContent = `${areaPersonnel.length} team members assigned`;
+                                
+                                if (areaPersonnel.length > 0) {
+                                    areaPersonnel.forEach(person => {
+                                        const listItem = document.createElement('li');
+                                        listItem.innerHTML = `<span class="person-name">${person.name}</span>`;
+                                        personnelList.appendChild(listItem);
+                                    });
+                                } else {
+                                    const listItem = document.createElement('li');
+                                    listItem.innerHTML = `<em>No team members assigned to this area</em>`;
+                                    personnelList.appendChild(listItem);
+                                }
+                            } else {
+                                personnelCount.textContent = '0 team members assigned';
+                                const listItem = document.createElement('li');
+                                listItem.innerHTML = `<em>No team members assigned to this area</em>`;
+                                personnelList.appendChild(listItem);
+                            }
+                            
+                            // Show the info panel
+                            infoPanel.style.display = 'block';
+                            
+                            // Prevent the event from bubbling up
+                            e.stopPropagation();
+                        });
+                    });
+                }
+                
+                // Add event listener to hide panel when clicking outside the map
+                document.addEventListener('click', function(event) {
+                    const svgMap = document.getElementById('svg-map');
+                    const infoPanel = document.getElementById('info-panel');
+                    
+                    if (!svgMap.contains(event.target) && event.target !== svgMap) {
+                        // Reset all paths
+                        const allPaths = svgDoc.querySelectorAll('path');
+                        allPaths.forEach(p => {
+                            p.classList.remove('selected');
+                            p.style.opacity = '';
+                            p.style.filter = '';
+                            p.style.transform = '';
+                            p.style.stroke = '';
+                            p.style.strokeWidth = '';
+                        });
+                        
+                        // Hide info panel
+                        infoPanel.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

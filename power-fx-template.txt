@@ -1,0 +1,206 @@
+// Power Fx Template for Interactive Area Map Integration
+// Copy these expressions into your Power Automate flows
+
+// 1. INITIALIZE MAP WITH DATA FROM SHAREPOINT
+// Use this in a "Run JavaScript" action in Power Automate to initialize the map with data from SharePoint lists
+
+// First, collect data from SharePoint lists
+Set(regionsData, 
+    ForAll(
+        Filter(
+            SharePoint.GetItems({
+                listName: "Regions"
+            }),
+            true
+        ),
+        {
+            Title: Title,
+            Description: Description,
+            ImagePath: ImagePath
+        }
+    )
+);
+
+Set(areasData, 
+    ForAll(
+        Filter(
+            SharePoint.GetItems({
+                listName: "Areas",
+                expandFields: ["Region"]
+            }),
+            true
+        ),
+        {
+            Title: Title,
+            Region: {
+                Title: Region.Title
+            },
+            Description: Description,
+            ImagePath: ImagePath
+        }
+    )
+);
+
+Set(personnelData, 
+    ForAll(
+        Filter(
+            SharePoint.GetItems({
+                listName: "PersonnelAssignments",
+                expandFields: ["Area", "Employee", "Area/Region"]
+            }),
+            true
+        ),
+        {
+            Title: Title,
+            Employee: {
+                Title: Employee.Title
+            },
+            Area: {
+                Title: Area.Title,
+                Region: {
+                    Title: Area.Region.Title
+                }
+            },
+            StartDate: StartDate,
+            EndDate: EndDate,
+            Notes: Notes
+        }
+    )
+);
+
+Set(imagesData, 
+    ForAll(
+        Filter(
+            SharePoint.GetItems({
+                listName: "MapImages"
+            }),
+            true
+        ),
+        {
+            Title: Title,
+            ImageType: ImageType,
+            AreaNumber: AreaNumber,
+            ImageUrl: Image.Url,
+            Description: Description,
+            LastUpdated: LastUpdated,
+            UpdatedBy: {
+                Title: UpdatedBy.Title
+            }
+        }
+    )
+);
+
+// Combine all data into a single JSON object
+Set(mapData, 
+    JSON({
+        regions: regionsData,
+        areas: areasData,
+        personnelAssignments: personnelData,
+        mapImages: imagesData
+    })
+);
+
+// Call the JavaScript function to initialize the map
+// This would be in a "Run JavaScript" action in Power Automate
+/*
+    // JavaScript code for Power Automate
+    var mapData = @{variables('mapData')};
+    return window.PowerFxMap.initializeMapWithPowerFxData(mapData);
+*/
+
+
+// 2. UPDATE SPECIFIC AREA WITH NEW PERSONNEL
+// Use this to update a specific area with new personnel assignments
+
+// First, get the personnel for the area
+Set(newPersonnel, 
+    ForAll(
+        Filter(
+            SharePoint.GetItems({
+                listName: "PersonnelAssignments",
+                expandFields: ["Employee"]
+            }),
+            Area.Title = "Area 1" && Area.Region.Title = "Region 1"
+        ),
+        {
+            name: Employee.Title,
+            startDate: Text(StartDate),
+            endDate: Text(EndDate),
+            notes: Notes
+        }
+    )
+);
+
+// Convert to JSON
+Set(personnelJson, JSON(newPersonnel));
+
+// Call the JavaScript function to update the area
+// This would be in a "Run JavaScript" action in Power Automate
+/*
+    // JavaScript code for Power Automate
+    var regionName = "Region 1";
+    var areaName = "Area 1";
+    var personnelJson = @{variables('personnelJson')};
+    return window.PowerFxMap.updateAreaWithPowerFx(regionName, areaName, personnelJson);
+*/
+
+
+// 3. GET CURRENT MAP STATE
+// Use this to get the current state of the map (selected region, area, etc.)
+
+// Call the JavaScript function to get the map state
+// This would be in a "Run JavaScript" action in Power Automate
+/*
+    // JavaScript code for Power Automate
+    return window.PowerFxMap.getMapStateForPowerFx();
+*/
+
+// Then parse the result in Power Automate
+Set(mapState, JSON(PowerAutomateResult));
+Set(selectedRegion, mapState.selectedRegion);
+Set(selectedArea, mapState.selectedArea);
+Set(personnel, mapState.personnel);
+
+
+// 4. HANDLE FORM SUBMISSION FROM THE MAP
+// Use this to process a form submission from the map
+
+// First, get the form data
+// This would be in a "Run JavaScript" action in Power Automate
+/*
+    // JavaScript code for Power Automate
+    var powerFxData = document.getElementById('power-fx-data');
+    if (powerFxData) {
+        return powerFxData.value;
+    } else {
+        return "{}";
+    }
+*/
+
+// Parse the form data
+Set(formData, JSON(PowerAutomateResult));
+
+// Create a new personnel assignment in SharePoint
+SharePoint.CreateItem({
+    listName: "PersonnelAssignments",
+    item: {
+        Title: Concatenate(formData.employee, " - ", formData.region, " - ", formData.area),
+        EmployeeId: LookUp(
+            SharePoint.GetItems({listName: "User Information List"}),
+            Title = formData.employee
+        ).Id,
+        AreaId: LookUp(
+            SharePoint.GetItems({listName: "Areas"}),
+            Title = formData.area && Region.Title = formData.region
+        ).Id,
+        StartDate: formData.startDate,
+        Notes: formData.notes
+    }
+});
+
+
+// 5. SCHEDULED REFRESH OF MAP DATA
+// Use this in a scheduled flow to refresh the map data periodically
+
+// Same as the initialization code above, but can be scheduled to run at intervals
+// This ensures the map always shows the latest data from SharePoint

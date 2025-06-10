@@ -1,0 +1,32 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Backup files
+backup/
+*.bak
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules/
+bower_components/
+
+# Build directories
+dist/
+build/
+out/
+
+# Temporary files
+.tmp/
+temp/

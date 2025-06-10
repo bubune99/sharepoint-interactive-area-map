@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Map - Personnel Query</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f6fc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        /* Map container styles */
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .svg-map {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* Controls styles */
+        .controls-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        .control-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        /* Results styles */
+        .results-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .person-item {
+            display: flex;
+            align-items: start;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .person-photo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .person-info {
+            flex: 1;
+        }
+        .person-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        .person-title {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .person-department {
+            color: #0078d4;
+            font-size: 0.85em;
+        }
+        .person-areas {
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+        .area-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 12px;
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .area-badge.primary {
+            background-color: #0078d4;
+            color: white;
+        }
+        .area-badge.secondary {
+            background-color: #6b6b6b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Area Map - Personnel Query</h1>
+        
+        <div class="map-container">
+            <object id="svg-map" class="svg-map" type="image/svg+xml" data="./Artboard 1.svg"></object>
+        </div>
+        
+        <div class="controls-container">
+            <div class="control-group">
+                <label class="control-label" for="region-select">Select Region:</label>
+                <select id="region-select" class="control-input">
+                    <option value="">-- Select Region --</option>
+                    <option value="East">East</option>
+                    <option value="Central">Central</option>
+                    <option value="West">West</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label" for="area-select">Select Area:</label>
+                <select id="area-select" class="control-input" disabled>
+                    <option value="">-- First Select Region --</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Coverage Type:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="coverage-type" value="all" checked> All</label>
+                    <label><input type="radio" name="coverage-type" value="primary"> Primary Only</label>
+                    <label><input type="radio" name="coverage-type" value="secondary"> Secondary Only</label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="query-button">Search</button>
+                <button id="reset-button">Reset</button>
+            </div>
+        </div>
+        
+        <div class="results-container" style="display: none;">
+            <h3>Search Results</h3>
+            <div id="results-summary"></div>
+            <div id="results-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        var personnelData = /*@SHAREPOINT_DATA@*/[
+            {
+                "Title": "John Smith",
+                "FirstName": "John",
+                "LastName": "Smith",
+                "PreferredFirstName": "Johnny",
+                "UserEmail": "john.smith@company.com",
+                "UserDepartment": "Sales",
+                "UserJobTitle": "Sales Engineer",
+                "PrimaryAreaIDs": ["A1", "A2"],
+                "SecondaryAreaIDs": ["B1"],
+                "Manager": {
+                    "DisplayName": "Jane Manager",
+                    "Email": "jane.manager@company.com",
+                    "Department": "Sales",
+                    "JobTitle": "Regional Manager"
+                }
+            },
+            {
+                "Title": "Jane Manager",
+                "FirstName": "Jane",
+                "LastName": "Manager",
+                "UserEmail": "jane.manager@company.com",
+                "UserDepartment": "Sales",
+                "UserJobTitle": "Regional Manager",
+                "PrimaryAreaIDs": ["B1", "B2", "B3"],
+                "SecondaryAreaIDs": [],
+                "Manager": {
+                    "DisplayName": "Tom Director",
+                    "Email": "tom.director@company.com",
+                    "Department": "Executive",
+                    "JobTitle": "Sales Director"
+                }
+            },
+            {
+                "Title": "Bob Wilson",
+                "FirstName": "Robert",
+                "LastName": "Wilson",
+                "PreferredFirstName": "Bob",
+                "UserEmail": "bob.wilson@company.com",
+                "UserDepartment": "Technical",
+                "UserJobTitle": "Support Engineer",
+                "PrimaryAreaIDs": ["C1"],
+                "SecondaryAreaIDs": ["A3", "A4"],
+                "Manager": {
+                    "DisplayName": "Jane Manager",
+                    "Email": "jane.manager@company.com",
+                    "Department": "Sales",
+                    "JobTitle": "Regional Manager"
+                }
+            }
+        ]/*@END_SHAREPOINT_DATA@*/;
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Personnel data:', personnelData);
+            initializeMap();
+            setupEventListeners();
+            performQuery();
+        });
+
+        // Initialize map
+        function initializeMap() {
+            const svgObject = document.getElementById('svg-map');
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                if (!svgDoc) {
+                    console.error('Could not access SVG document');
+                    return;
+                }
+
+                const paths = svgDoc.querySelectorAll('path');
+                paths.forEach(path => {
+                    path.addEventListener('click', handleAreaClick);
+                    path.addEventListener('mouseenter', handleAreaHover);
+                    path.addEventListener('mouseleave', handleAreaLeave);
+                });
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            const regionSelect = document.getElementById('region-select');
+            const areaSelect = document.getElementById('area-select');
+
+            regionSelect.addEventListener('change', function() {
+                updateAreaDropdown(this.value);
+                performQuery();
+            });
+
+            areaSelect.addEventListener('change', performQuery);
+
+            document.querySelectorAll('input[name="coverage-type"]').forEach(radio => {
+                radio.addEventListener('change', performQuery);
+            });
+
+            document.getElementById('query-button').addEventListener('click', performQuery);
+            document.getElementById('reset-button').addEventListener('click', resetQuery);
+        }
+
+        // Update area dropdown based on selected region
+        function updateAreaDropdown(region) {
+            const areaSelect = document.getElementById('area-select');
+            areaSelect.innerHTML = '';
+            areaSelect.disabled = !region;
+
+            if (!region) {
+                areaSelect.innerHTML = '<option value="">-- First Select Region --</option>';
+                return;
+            }
+
+            const areas = getAreasForRegion(region);
+            areaSelect.innerHTML = '<option value="">All Areas in ' + region + '</option>';
+            
+            areas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area.id;
+                option.textContent = area.name;
+                areaSelect.appendChild(option);
+            });
+        }
+
+        // Get areas for a specific region
+        function getAreasForRegion(region) {
+            const areaMap = {
+                'East': [
+                    { id: 'A1', name: 'Area 1' },
+                    { id: 'A2', name: 'Area 2' },
+                    { id: 'A3', name: 'Area 3' },
+                    { id: 'A4', name: 'Area 4' }
+                ],
+                'Central': [
+                    { id: 'B1', name: 'Area 5' },
+                    { id: 'B2', name: 'Area 6' },
+                    { id: 'B3', name: 'Area 7' }
+                ],
+                'West': [
+                    { id: 'C1', name: 'Area 8' }
+                ]
+            };
+            return areaMap[region] || [];
+        }
+
+        // Handle area click
+        function handleAreaClick(event) {
+            const areaId = event.target.id;
+            updateSelectionsForArea(areaId);
+            performQuery();
+        }
+
+        // Handle area hover
+        function handleAreaHover(event) {
+            event.target.style.opacity = '0.7';
+        }
+
+        // Handle area leave
+        function handleAreaLeave(event) {
+            event.target.style.opacity = '1';
+        }
+
+        // Update selections based on clicked area
+        function updateSelectionsForArea(areaId) {
+            const region = getRegionForArea(areaId);
+            if (region) {
+                document.getElementById('region-select').value = region;
+                updateAreaDropdown(region);
+                document.getElementById('area-select').value = areaId;
+            }
+        }
+
+        // Get region for area
+        function getRegionForArea(areaId) {
+            if (areaId.startsWith('A')) return 'East';
+            if (areaId.startsWith('B')) return 'Central';
+            if (areaId.startsWith('C')) return 'West';
+            return '';
+        }
+
+        // Find matching personnel
+        function findMatchingPersonnel(region, area, coverageType) {
+            console.log('Finding personnel for:', { region, area, coverageType });
+            console.log('Available personnel:', personnelData);
+
+            // If no region selected, return all personnel
+            if (!region) {
+                return personnelData.map(person => ({
+                    ...person,
+                    coverageType: 'all'
+                }));
+            }
+
+            const results = [];
+            
+            personnelData.forEach(person => {
+                // Get primary and secondary areas
+                const primaryAreas = Array.isArray(person.PrimaryAreaIDs) ? person.PrimaryAreaIDs : [];
+                const secondaryAreas = Array.isArray(person.SecondaryAreaIDs) ? person.SecondaryAreaIDs : [];
+
+                console.log('Checking person:', person.Title, { primaryAreas, secondaryAreas });
+
+                let isPrimary = false;
+                let isSecondary = false;
+
+                // Check if person matches the area criteria
+                if (area) {
+                    isPrimary = primaryAreas.includes(area);
+                    isSecondary = secondaryAreas.includes(area);
+                } else {
+                    // If no specific area, check if person has any areas in the region
+                    isPrimary = primaryAreas.some(areaId => areaId.startsWith(region[0]));
+                    isSecondary = secondaryAreas.some(areaId => areaId.startsWith(region[0]));
+                }
+
+                // Add person to results based on coverage type
+                if ((coverageType === 'all' && (isPrimary || isSecondary)) ||
+                    (coverageType === 'primary' && isPrimary) ||
+                    (coverageType === 'secondary' && isSecondary)) {
+                    results.push({
+                        ...person,
+                        coverageType: isPrimary ? 'primary' : 'secondary'
+                    });
+                }
+            });
+
+            console.log('Found matching personnel:', results);
+            return results;
+        }
+
+        // Display query results
+        function displayQueryResults(region, area, coverageType) {
+            const resultsContainer = document.querySelector('.results-container');
+            const resultsSummary = document.getElementById('results-summary');
+            const resultsList = document.getElementById('results-list');
+
+            resultsContainer.style.display = 'block';
+            resultsList.innerHTML = '';
+
+            const matchingPersonnel = findMatchingPersonnel(region, area, coverageType);
+            
+            // Update summary
+            let summaryText = '';
+            if (region) {
+                if (area) {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} - Area ${area}`;
+                } else {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} region`;
+                }
+                if (coverageType !== 'all') {
+                    summaryText += ` (${coverageType} coverage only)`;
+                }
+            } else {
+                summaryText = 'Showing all personnel';
+            }
+            resultsSummary.textContent = summaryText;
+
+            // Display results
+            matchingPersonnel.forEach(person => {
+                const personElement = document.createElement('div');
+                personElement.className = 'person-item';
+
+                const photo = document.createElement('img');
+                photo.className = 'person-photo';
+                photo.src = person.ProfilePicture;
+                photo.alt = 'Profile Picture';
+
+                const info = document.createElement('div');
+                info.className = 'person-info';
+
+                const name = document.createElement('div');
+                name.className = 'person-name';
+                name.textContent = person.PreferredFirstName ? 
+                    `${person.PreferredFirstName} ${person.LastName}` :
+                    `${person.FirstName} ${person.LastName}`;
+
+                const title = document.createElement('div');
+                title.className = 'person-title';
+                title.textContent = person.JobTitle;
+
+                const department = document.createElement('div');
+                department.className = 'person-department';
+                department.textContent = person.Department;
+
+                info.appendChild(name);
+                info.appendChild(title);
+                info.appendChild(department);
+
+                if (person.Manager) {
+                    const manager = document.createElement('div');
+                    manager.className = 'person-manager';
+                    manager.innerHTML = `
+                        <div class="manager-title">Manager:</div>
+                        <div class="manager-name">${person.Manager.DisplayName}</div>
+                        <div class="manager-info">${person.Manager.JobTitle}</div>
+                    `;
+                    info.appendChild(manager);
+                }
+
+                const areas = document.createElement('div');
+                areas.className = 'person-areas';
+                if (person.PrimaryAreaIDs && person.PrimaryAreaIDs.length > 0) {
+                    const primaryAreas = document.createElement('div');
+                    primaryAreas.innerHTML = person.PrimaryAreaIDs.map(id => 
+                        `<span class="area-badge primary">${id}</span>`
+                    ).join('');
+                    areas.appendChild(primaryAreas);
+                }
+                if (person.SecondaryAreaIDs && person.SecondaryAreaIDs.length > 0) {
+                    const secondaryAreas = document.createElement('div');
+                    secondaryAreas.innerHTML = person.SecondaryAreaIDs.map(id =>
+                        `<span class="area-badge secondary">${id}</span>`
+                    ).join('');
+                    areas.appendChild(secondaryAreas);
+                }
+                info.appendChild(areas);
+
+                personElement.appendChild(photo);
+                personElement.appendChild(info);
+                resultsList.appendChild(personElement);
+            });
+        }
+
+        // Perform query
+        function performQuery() {
+            const region = document.getElementById('region-select').value;
+            const area = document.getElementById('area-select').value;
+            const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
+
+            clearAllHighlights();
+            if (region) {
+                if (area) {
+                    highlightArea(area);
+                } else {
+                    highlightRegion(region);
+                }
+            }
+
+            displayQueryResults(region, area, coverageType);
+        }
+
+        // Reset query
+        function resetQuery() {
+            document.getElementById('region-select').value = '';
+            updateAreaDropdown('');
+            document.querySelector('input[name="coverage-type"][value="all"]').checked = true;
+            clearAllHighlights();
+            hideResults();
+        }
+
+        // Clear all highlights
+        function clearAllHighlights() {
+            const svgDoc = document.getElementById('svg-map').contentDocument;
+            if (!svgDoc) return;
+
+            const paths = svgDoc.querySelectorAll('path');
+            paths.forEach(path => {
+                path.style.opacity = '1';
+                path.style.fill = '';
+            });
+        }
+
+        // Highlight area
+        function highlightArea(areaId) {
+            const svgDoc = document.getElementById('svg-map').contentDocument;
+            if (!svgDoc) return;
+
+            const path = svgDoc.getElementById(areaId);
+            if (path) {
+                path.style.fill = '#0078d4';
+            }
+        }
+
+        // Highlight region
+        function highlightRegion(region) {
+            const areas = getAreasForRegion(region);
+            areas.forEach(area => highlightArea(area.id));
+        }
+
+        // Hide results
+        function hideResults() {
+            const resultsContainer = document.querySelector('.results-container');
+            resultsContainer.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

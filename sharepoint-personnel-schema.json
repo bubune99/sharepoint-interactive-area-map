@@ -1,0 +1,116 @@
+{
+  "listName": "AreaPersonnel",
+  "description": "Contains personnel assignments for map areas and master distribution list information",
+  "fields": [
+    {
+      "name": "Title",
+      "type": "Text",
+      "description": "Auto-generated title for the assignment",
+      "required": true
+    },
+    {
+      "name": "User",
+      "type": "Person",
+      "description": "The user assigned to the area(s)",
+      "required": true
+    },
+    {
+      "name": "FirstName",
+      "type": "Text",
+      "description": "First name (auto-populated from User selection via Power Automate)",
+      "required": false
+    },
+    {
+      "name": "LastName",
+      "type": "Text",
+      "description": "Last name (auto-populated from User selection via Power Automate)",
+      "required": false
+    },
+    {
+      "name": "PreferredFirstName",
+      "type": "Text",
+      "description": "Preferred first name (if different from official name)",
+      "required": false
+    },
+    {
+      "name": "Email",
+      "type": "Text",
+      "description": "Email address (auto-populated from User selection via Power Automate)",
+      "required": false
+    },
+    {
+      "name": "ProfilePicture",
+      "type": "Image",
+      "description": "Custom profile picture (overrides the default from user profile)",
+      "required": false
+    },
+    {
+      "name": "PrimaryAreaIDs",
+      "type": "MultiChoice",
+      "description": "Primary area responsibilities in format A06_GulfCoast (allows multiple selections)",
+      "required": true,
+      "multiSelect": true
+    },
+    {
+      "name": "SecondaryAreaIDs",
+      "type": "MultiChoice",
+      "description": "Secondary/backup area responsibilities in format A06_GulfCoast (allows multiple selections)",
+      "required": false,
+      "multiSelect": true
+    },
+    {
+      "name": "Manager",
+      "type": "Person",
+      "description": "The user's manager",
+      "required": false
+    },
+    {
+      "name": "JobTitle",
+      "type": "Text",
+      "description": "The user's job title",
+      "required": false
+    },
+    {
+      "name": "StartDate",
+      "type": "DateTime",
+      "description": "When the assignment starts",
+      "required": false
+    },
+    {
+      "name": "Notes",
+      "type": "Note",
+      "description": "Additional notes about the assignment",
+      "required": false
+    },
+    {
+      "name": "LastUpdated",
+      "type": "DateTime",
+      "description": "When the assignment was last updated",
+      "required": false
+    }
+  ],
+  "calculatedFields": [
+    {
+      "name": "Region",
+      "type": "Text",
+      "description": "Derived from AreaIDs (East, Central, West)",
+      "formula": "=IF(ISBLANK([AreaIDs]), \"\", IF(STARTSWITH([AreaIDs], \"A\"), \"East\", IF(STARTSWITH([AreaIDs], \"B\"), \"Central\", IF(STARTSWITH([AreaIDs], \"C\"), \"West\", \"\"))))"
+    },
+    {
+      "name": "DisplayName",
+      "type": "Text",
+      "description": "Display name using preferred first name if available",
+      "formula": "=IF(ISBLANK([PreferredFirstName]), CONCATENATE([FirstName], ' ', [LastName]), CONCATENATE([PreferredFirstName], ' ', [LastName]))"
+    }
+  ],
+  "powerAutomateFlow": {
+    "name": "Auto-Populate User Details",
+    "description": "Automatically populates FirstName, LastName, and Email fields when a User is selected or changed",
+    "trigger": "When an item is created or modified",
+    "actions": [
+      "Get user profile properties from User field",
+      "Update FirstName, LastName, and Email fields with values from user profile",
+      "Keep existing PreferredFirstName and ProfilePicture if already set"
+    ]
+  }
+}

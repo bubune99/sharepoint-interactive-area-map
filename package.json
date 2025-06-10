@@ -1,0 +1,11 @@
+{
+  "name": "sharepoint-interactive-area-map",
+  "version": "1.0.0",
+  "description": "Interactive area map for SharePoint",
+  "scripts": {
+    "dev": "npx http-server -p 8080"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}

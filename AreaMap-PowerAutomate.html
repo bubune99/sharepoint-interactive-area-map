@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Map - Personnel Query</title>
+    <style>
+        /* Original styles here */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Area Map - Personnel Query</h1>
+        
+        <div class="map-container">
+            <object id="svg-map" class="svg-map" type="image/svg+xml" data="Artboard 1.svg"></object>
+        </div>
+        
+        <div class="controls-container">
+            <div class="control-group">
+                <label for="region-select">Select Region:</label>
+                <select id="region-select">
+                    <option value="">-- Select Region --</option>
+                    <option value="East">East</option>
+                    <option value="Central">Central</option>
+                    <option value="West">West</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="area-select">Select Area:</label>
+                <select id="area-select" disabled>
+                    <option value="">-- First Select Region --</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Coverage Type:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="coverage-type" value="all" checked> All</label>
+                    <label><input type="radio" name="coverage-type" value="primary"> Primary Only</label>
+                    <label><input type="radio" name="coverage-type" value="secondary"> Secondary Only</label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="query-button">Search</button>
+                <button id="reset-button">Reset</button>
+            </div>
+        </div>
+        
+        <div class="results-container" style="display: none;">
+            <h3>Search Results</h3>
+            <div id="results-summary"></div>
+            <div id="results-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        var personnelData = /*@SHAREPOINT_DATA@*/[]/*@END_SHAREPOINT_DATA@*/;
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            setupEventListeners();
+        });
+
+        // Initialize map and event handlers
+        function initializeMap() {
+            const svgObject = document.getElementById('svg-map');
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                if (!svgDoc) {
+                    console.error('Could not access SVG document');
+                    return;
+                }
+
+                const paths = svgDoc.querySelectorAll('path');
+                paths.forEach(path => {
+                    path.addEventListener('click', handleAreaClick);
+                    path.addEventListener('mouseenter', handleAreaHover);
+                    path.addEventListener('mouseleave', handleAreaLeave);
+                });
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            const regionSelect = document.getElementById('region-select');
+            const areaSelect = document.getElementById('area-select');
+
+            regionSelect.addEventListener('change', function(event) {
+                const region = event.target.value;
+                updateAreaDropdown(region);
+                performQuery();
+            });
+
+            areaSelect.addEventListener('change', performQuery);
+
+            document.querySelectorAll('input[name="coverage-type"]').forEach(radio => {
+                radio.addEventListener('change', performQuery);
+            });
+
+            document.getElementById('query-button').addEventListener('click', performQuery);
+            document.getElementById('reset-button').addEventListener('click', resetQuery);
+        }
+
+        // Update area dropdown based on selected region
+        function updateAreaDropdown(region) {
+            const areaSelect = document.getElementById('area-select');
+            areaSelect.innerHTML = '';
+            areaSelect.disabled = !region;
+
+            if (!region) {
+                areaSelect.innerHTML = '<option value="">-- First Select Region --</option>';
+                return;
+            }
+
+            const areas = getAreasForRegion(region);
+            areaSelect.innerHTML = '<option value="">All Areas in ' + region + '</option>';
+            areas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area.id;
+                option.textContent = area.name;
+                areaSelect.appendChild(option);
+            });
+        }
+
+        // Get areas for a specific region
+        function getAreasForRegion(region) {
+            const areaMap = {
+                'East': [
+                    { id: 'A1', name: 'Area 1' },
+                    { id: 'A2', name: 'Area 2' },
+                    { id: 'A3', name: 'Area 3' },
+                    { id: 'A4', name: 'Area 4' }
+                ],
+                'Central': [
+                    { id: 'B1', name: 'Area 5' },
+                    { id: 'B2', name: 'Area 6' },
+                    { id: 'B3', name: 'Area 7' }
+                ],
+                'West': [
+                    { id: 'C1', name: 'Area 8' }
+                ]
+            };
+            return areaMap[region] || [];
+        }
+
+        // Handle area click
+        function handleAreaClick(event) {
+            const areaId = event.target.id;
+            updateSelectionsForArea(areaId);
+            performQuery();
+        }
+
+        // Handle area hover
+        function handleAreaHover(event) {
+            event.target.style.opacity = '0.7';
+        }
+
+        // Handle area leave
+        function handleAreaLeave(event) {
+            event.target.style.opacity = '1';
+        }
+
+        // Update selections based on clicked area
+        function updateSelectionsForArea(areaId) {
+            const region = getRegionForArea(areaId);
+            if (region) {
+                document.getElementById('region-select').value = region;
+                updateAreaDropdown(region);
+                document.getElementById('area-select').value = areaId;
+            }
+        }
+
+        // Get region for area
+        function getRegionForArea(areaId) {
+            if (areaId.startsWith('A')) return 'East';
+            if (areaId.startsWith('B')) return 'Central';
+            if (areaId.startsWith('C')) return 'West';
+            return '';
+        }
+
+        // Perform personnel query
+        function performQuery() {
+            const region = document.getElementById('region-select').value;
+            const area = document.getElementById('area-select').value;
+            const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
+
+            clearAllHighlights();
+            if (region) {
+                if (area) {
+                    highlightArea(area);
+                } else {
+                    highlightRegion(region);
+                }
+            }
+
+            displayQueryResults(region, area, coverageType);
+        }
+
+        // Reset query
+        function resetQuery() {
+            document.getElementById('region-select').value = '';
+            updateAreaDropdown('');
+            document.querySelector('input[name="coverage-type"][value="all"]').checked = true;
+            clearAllHighlights();
+            hideResults();
+        }
+
+        // Clear all highlights
+        function clearAllHighlights() {
+            const svgDoc = document.getElementById('svg-map').contentDocument;
+            if (!svgDoc) return;
+
+            const paths = svgDoc.querySelectorAll('path');
+            paths.forEach(path => {
+                path.style.opacity = '1';
+                path.style.fill = '';
+            });
+        }
+
+        // Highlight specific area
+        function highlightArea(areaId) {
+            const svgDoc = document.getElementById('svg-map').contentDocument;
+            if (!svgDoc) return;
+
+            const path = svgDoc.getElementById(areaId);
+            if (path) {
+                path.style.fill = '#0078d4';
+            }
+        }
+
+        // Highlight region
+        function highlightRegion(region) {
+            const areas = getAreasForRegion(region);
+            areas.forEach(area => highlightArea(area.id));
+        }
+
+        // Find matching personnel
+        function findMatchingPersonnel(region, area, coverageType) {
+            let areaIds = [];
+            if (area) {
+                areaIds = [area];
+            } else if (region) {
+                areaIds = getAreasForRegion(region).map(a => a.id);
+            }
+
+            return personnelData.filter(person => {
+                if (!areaIds.length) return true;
+
+                const primaryMatches = person.PrimaryAreaIDs.some(id => areaIds.includes(id));
+                const secondaryMatches = person.SecondaryAreaIDs.some(id => areaIds.includes(id));
+
+                switch (coverageType) {
+                    case 'primary': return primaryMatches;
+                    case 'secondary': return secondaryMatches;
+                    default: return primaryMatches || secondaryMatches;
+                }
+            });
+        }
+
+        // Display query results
+        function displayQueryResults(region, area, coverageType) {
+            const resultsContainer = document.querySelector('.results-container');
+            const resultsSummary = document.getElementById('results-summary');
+            const resultsList = document.getElementById('results-list');
+
+            resultsContainer.style.display = 'block';
+            resultsList.innerHTML = '';
+
+            const matchingPersonnel = findMatchingPersonnel(region, area, coverageType);
+            
+            // Update summary
+            let summaryText = '';
+            if (region) {
+                if (area) {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} - Area ${area}`;
+                } else {
+                    summaryText = `Found ${matchingPersonnel.length} personnel for ${region} region`;
+                }
+                if (coverageType !== 'all') {
+                    summaryText += ` (${coverageType} coverage only)`;
+                }
+            } else {
+                summaryText = 'Showing all personnel';
+            }
+            resultsSummary.textContent = summaryText;
+
+            // Display results
+            matchingPersonnel.forEach(person => {
+                const personElement = document.createElement('div');
+                personElement.className = 'person-item';
+
+                const photo = document.createElement('img');
+                photo.className = 'person-photo';
+                photo.src = person.ProfilePicture;
+                photo.alt = 'Profile Picture';
+
+                const info = document.createElement('div');
+                info.className = 'person-info';
+
+                const name = document.createElement('div');
+                name.className = 'person-name';
+                name.textContent = person.PreferredFirstName ? 
+                    `${person.PreferredFirstName} ${person.LastName}` :
+                    `${person.FirstName} ${person.LastName}`;
+
+                const title = document.createElement('div');
+                title.className = 'person-title';
+                title.textContent = person.JobTitle;
+
+                const department = document.createElement('div');
+                department.className = 'person-department';
+                department.textContent = person.Department;
+
+                info.appendChild(name);
+                info.appendChild(title);
+                info.appendChild(department);
+
+                if (person.Manager) {
+                    const manager = document.createElement('div');
+                    manager.className = 'person-manager';
+                    manager.innerHTML = `
+                        <div class="manager-title">Manager:</div>
+                        <div class="manager-name">${person.Manager.DisplayName}</div>
+                        <div class="manager-info">${person.Manager.JobTitle}</div>
+                    `;
+                    info.appendChild(manager);
+                }
+
+                const areas = document.createElement('div');
+                areas.className = 'person-areas';
+
+                if (person.PrimaryAreaIDs.length > 0) {
+                    const primaryAreas = document.createElement('div');
+                    primaryAreas.innerHTML = person.PrimaryAreaIDs.map(id => 
+                        `<span class="area-badge primary">${id}</span>`
+                    ).join('');
+                    areas.appendChild(primaryAreas);
+                }
+
+                if (person.SecondaryAreaIDs.length > 0) {
+                    const secondaryAreas = document.createElement('div');
+                    secondaryAreas.innerHTML = person.SecondaryAreaIDs.map(id =>
+                        `<span class="area-badge secondary">${id}</span>`
+                    ).join('');
+                    areas.appendChild(secondaryAreas);
+                }
+
+                info.appendChild(areas);
+                personElement.appendChild(photo);
+                personElement.appendChild(info);
+                resultsList.appendChild(personElement);
+            });
+        }
+
+        // Hide results
+        function hideResults() {
+            const resultsContainer = document.querySelector('.results-container');
+            resultsContainer.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
