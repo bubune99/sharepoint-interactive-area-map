@@ -196,54 +196,58 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="charts-section">
-            <div class="chart-container">
-                <h3>📈 Clicks Over Time</h3>
-                
-                <!-- Time Period Controls -->
-                <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
-                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <div>
-                            <label style="font-weight: 500; margin-right: 5px;">Period:</label>
-                            <select id="timePeriod" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="day">Daily</option>
-                                <option value="week">Weekly</option>
-                                <option value="month" selected>Monthly</option>
-                                <option value="year">Yearly</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label style="font-weight: 500; margin-right: 5px;">From:</label>
-                            <input type="date" id="startDate" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        
-                        <div>
-                            <label style="font-weight: 500; margin-right: 5px;">To:</label>
-                            <input type="date" id="endDate" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        
-                        <button onclick="resetDateRange()" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">Reset Range</button>
+        <!-- Full Width Time Chart -->
+        <div class="chart-container" style="margin-bottom: 30px;">
+            <h3>📈 Clicks Over Time</h3>
+            
+            <!-- Time Period Controls -->
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label style="font-weight: 500; margin-right: 5px;">Chart Type:</label>
+                        <select id="chartType" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="line" selected>📈 Line Chart</option>
+                            <option value="bar">📊 Bar Chart</option>
+                        </select>
                     </div>
+                    
+                    <div>
+                        <label style="font-weight: 500; margin-right: 5px;">Period:</label>
+                        <select id="timePeriod" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="hour">Hourly</option>
+                            <option value="day">Daily</option>
+                            <option value="week">Weekly</option>
+                            <option value="month" selected>Monthly</option>
+                            <option value="year">Yearly</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: 500; margin-right: 5px;">From:</label>
+                        <input type="date" id="startDate" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: 500; margin-right: 5px;">To:</label>
+                        <input type="date" id="endDate" onchange="updateTimeChart()" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <button onclick="resetDateRange()" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">Reset Range</button>
                 </div>
-                
-                <canvas id="timeChart" width="400" height="200"></canvas>
             </div>
+            
+            <canvas id="timeChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Two Charts Section -->
+        <div class="charts-section">
             <div class="chart-container">
                 <h3>🏆 Top Areas by Clicks</h3>
                 <canvas id="areaChart" width="400" height="200"></canvas>
             </div>
-        </div>
-
-        <div class="charts-section">
             <div class="chart-container">
                 <h3>🌍 Clicks by Region</h3>
                 <canvas id="regionChart" width="400" height="200"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>⏰ Clicks by Hour</h3>
-                <canvas id="hourChart" width="400" height="200"></canvas>
             </div>
         </div>
 
@@ -375,7 +379,6 @@
             updateTimeChart();
             updateAreaChart();
             updateRegionChart();
-            updateHourChart();
         }
 
         // Update clicks over time chart with period and date range options
@@ -384,7 +387,8 @@
             
             if (analyticsData.length === 0) return;
             
-            // Get selected period and date range
+            // Get selected chart type, period and date range
+            const chartType = document.getElementById('chartType').value;
             const period = document.getElementById('timePeriod').value;
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -407,6 +411,10 @@
                 let periodKey;
                 
                 switch (period) {
+                    case 'hour':
+                        const clickDateTime = new Date(d.Timestamp || d.timestamp);
+                        periodKey = `${clickDateTime.getHours()}:00`;
+                        break;
                     case 'day':
                         periodKey = clickDate.toISOString().split('T')[0];
                         break;
@@ -426,12 +434,24 @@
             });
             
             // Sort and format labels
-            const sortedPeriods = Object.keys(periodCounts).sort();
+            let sortedPeriods;
+            if (period === 'hour') {
+                // For hours, sort numerically (0:00, 1:00, ... 23:00)
+                sortedPeriods = Object.keys(periodCounts).sort((a, b) => {
+                    const hourA = parseInt(a.split(':')[0]);
+                    const hourB = parseInt(b.split(':')[0]);
+                    return hourA - hourB;
+                });
+            } else {
+                sortedPeriods = Object.keys(periodCounts).sort();
+            }
             const clickCounts = sortedPeriods.map(period => periodCounts[period]);
             
             // Format labels based on period type
             const formattedLabels = sortedPeriods.map(periodKey => {
                 switch (period) {
+                    case 'hour':
+                        return periodKey; // Already formatted as "H:00"
                     case 'day':
                         return new Date(periodKey).toLocaleDateString();
                     case 'week':
@@ -449,6 +469,7 @@
             
             // Determine chart label
             const chartLabels = {
+                'hour': 'Clicks per Hour',
                 'day': 'Clicks per Day',
                 'week': 'Clicks per Week', 
                 'month': 'Clicks per Month',
@@ -459,22 +480,34 @@
                 charts.timeChart.destroy();
             }
             
+            // Configure dataset based on chart type
+            const datasetConfig = {
+                label: chartLabels[period],
+                data: clickCounts,
+                borderColor: '#0078d4',
+                backgroundColor: 'rgba(0, 120, 212, 0.8)',
+            };
+            
+            // Add type-specific styling
+            if (chartType === 'line') {
+                datasetConfig.backgroundColor = 'rgba(0, 120, 212, 0.1)';
+                datasetConfig.fill = true;
+                datasetConfig.tension = 0.4;
+                datasetConfig.pointBackgroundColor = '#0078d4';
+                datasetConfig.pointBorderColor = '#ffffff';
+                datasetConfig.pointBorderWidth = 2;
+                datasetConfig.pointRadius = 4;
+            } else {
+                // Bar chart styling
+                datasetConfig.backgroundColor = 'rgba(0, 120, 212, 0.8)';
+                datasetConfig.borderWidth = 1;
+            }
+            
             charts.timeChart = new Chart(ctx, {
-                type: 'line',
+                type: chartType,
                 data: {
                     labels: formattedLabels,
-                    datasets: [{
-                        label: chartLabels[period],
-                        data: clickCounts,
-                        borderColor: '#0078d4',
-                        backgroundColor: 'rgba(0, 120, 212, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#0078d4',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
-                    }]
+                    datasets: [datasetConfig]
                 },
                 options: {
                     responsive: true,
@@ -636,51 +669,6 @@
             });
         }
 
-        // Update hour chart
-        function updateHourChart() {
-            const ctx = document.getElementById('hourChart').getContext('2d');
-            
-            // Count clicks per hour
-            const hourCounts = {};
-            for (let i = 0; i < 24; i++) {
-                hourCounts[i] = 0;
-            }
-            
-            analyticsData.forEach(d => {
-                const timeStr = d.Time || d.time || d.Timestamp || d.timestamp;
-                const hour = new Date(timeStr).getHours();
-                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-            });
-            
-            if (charts.hourChart) {
-                charts.hourChart.destroy();
-            }
-            
-            charts.hourChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(hourCounts).map(h => `${h}:00`),
-                    datasets: [{
-                        label: 'Clicks per Hour',
-                        data: Object.values(hourCounts),
-                        backgroundColor: 'rgba(16, 124, 16, 0.8)',
-                        borderColor: '#107c10',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-        }
 
 
         // Show message to user
