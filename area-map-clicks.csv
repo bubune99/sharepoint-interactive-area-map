@@ -1,0 +1,2 @@
+Timestamp,Date,Time,AreaCode,AreaName,Region,SessionId,UserAgent,URL
+2024-01-15T10:30:00.000Z,2024-01-15,10:30:00,A1,Baltimore Coast,East,session_1705317000_abc123,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",https://example.sharepoint.com/areamap.html

@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Area Map - Personnel Query - UPDATED VERSION</title>
+    <title>Area Map - Personnel Query</title>
     <style>
         /* Base styles */
         body {
@@ -534,24 +531,9 @@
             <div class="control-group">
                 <button id="query-button" class="control-button">Search</button>
                 <button id="reset-button" class="control-button button-secondary">Reset</button>
-                <button id="analytics-button" class="control-button button-secondary" style="margin-left: 10px;">📊 Analytics</button>
-                <button id="test-modal-button" class="control-button" style="background-color: #d13438 !important; margin-left: 10px; font-size: 16px !important; padding: 12px 20px !important; animation: pulse 2s infinite !important;">🧪 TEST MODAL - CLICK ME!</button>
             </div>
         </div>
         
-        <!-- Analytics Panel -->
-        <div id="analytics-panel" class="controls-container" style="display: none;">
-            <h3>📊 Usage Analytics</h3>
-            <div class="control-group">
-                <div id="analytics-summary"></div>
-            </div>
-            <div class="control-group">
-                <button id="export-analytics" class="control-button">Export Data</button>
-                <button id="view-analytics" class="control-button button-secondary">View Details</button>
-                <button id="clear-analytics" class="control-button" style="background-color: #d13438;">Clear Data</button>
-                <button id="close-analytics" class="control-button button-secondary">Close</button>
-            </div>
-        </div>
         
         <!-- Results Container -->
         <div class="results-container">
@@ -582,153 +564,158 @@
         // Global variables
         var personnelData = /*@SHAREPOINT_DATA@*/[]/*@END_SHAREPOINT_DATA@*/;
         
-        // Analytics tracking system
-        var analytics = {
-            sessionId: generateSessionId(),
-            startTime: new Date().toISOString(),
-            events: {
-                areaHovers: {},      // Track hover counts per area
-                areaClicks: {},      // Track click counts per area
-                queries: {           // Track query executions
-                    total: 0,
-                    byRegion: {},
-                    byArea: {},
-                    byCoverageType: {}
-                },
-                sessions: []         // Track session data
-            },
+        // Automatic CSV logging for admin tracking
+        function logAreaClick(areaCode, areaName, region) {
+            const clickData = {
+                timestamp: new Date().toISOString(),
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().split(' ')[0],
+                areaCode: areaCode,
+                areaName: areaName,
+                region: region,
+                sessionId: generateSessionId(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            };
             
-            // Initialize analytics from localStorage
-            init: function() {
-                const saved = localStorage.getItem('areaMapAnalytics');
-                if (saved) {
-                    try {
-                        const data = JSON.parse(saved);
-                        this.events = { ...this.events, ...data };
-                    } catch (e) {
-                        console.log('Could not load analytics data:', e);
-                    }
-                }
-                
-                // Record session start
-                this.events.sessions.push({
-                    sessionId: this.sessionId,
-                    startTime: this.startTime,
-                    userAgent: navigator.userAgent,
-                    url: window.location.href
-                });
-                
-                this.save();
-            },
+            // Save to localStorage for analytics dashboard
+            appendToLocalStorage(clickData);
             
-            // Save analytics to localStorage
-            save: function() {
-                try {
-                    localStorage.setItem('areaMapAnalytics', JSON.stringify(this.events));
-                } catch (e) {
-                    console.log('Could not save analytics data:', e);
-                }
-            },
+            // Automatically write to CSV file (for admin use)
+            writeToCSVFile(clickData);
             
-            // Track area hover
-            trackHover: function(areaCode, areaName) {
-                const key = `${areaCode}_${areaName}`;
-                this.events.areaHovers[key] = (this.events.areaHovers[key] || 0) + 1;
-                this.save();
-                console.log(`Hover tracked: ${areaName} (${this.events.areaHovers[key]} times)`);
-            },
-            
-            // Track area click
-            trackClick: function(areaCode, areaName) {
-                const key = `${areaCode}_${areaName}`;
-                this.events.areaClicks[key] = (this.events.areaClicks[key] || 0) + 1;
-                this.save();
-                console.log(`Click tracked: ${areaName} (${this.events.areaClicks[key]} times)`);
-            },
-            
-            // Track query execution
-            trackQuery: function(region, area, coverageType) {
-                this.events.queries.total++;
-                
-                if (region) {
-                    this.events.queries.byRegion[region] = (this.events.queries.byRegion[region] || 0) + 1;
-                }
-                
-                if (area) {
-                    this.events.queries.byArea[area] = (this.events.queries.byArea[area] || 0) + 1;
-                }
-                
-                this.events.queries.byCoverageType[coverageType] = (this.events.queries.byCoverageType[coverageType] || 0) + 1;
-                
-                this.save();
-                console.log(`Query tracked: Region=${region}, Area=${area}, Coverage=${coverageType}`);
-            },
-            
-            // Get analytics summary
-            getSummary: function() {
-                return {
-                    sessionInfo: {
-                        sessionId: this.sessionId,
-                        startTime: this.startTime,
-                        totalSessions: this.events.sessions.length
-                    },
-                    interactions: {
-                        totalHovers: Object.values(this.events.areaHovers).reduce((a, b) => a + b, 0),
-                        totalClicks: Object.values(this.events.areaClicks).reduce((a, b) => a + b, 0),
-                        totalQueries: this.events.queries.total,
-                        mostHoveredAreas: this.getTopAreas(this.events.areaHovers, 5),
-                        mostClickedAreas: this.getTopAreas(this.events.areaClicks, 5),
-                        popularRegions: this.events.queries.byRegion,
-                        coverageTypePreferences: this.events.queries.byCoverageType
-                    },
-                    rawData: this.events
-                };
-            },
-            
-            // Get top areas by interaction count
-            getTopAreas: function(data, limit = 5) {
-                return Object.entries(data)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, limit)
-                    .map(([key, count]) => ({
-                        area: key.split('_').slice(1).join(' '),
-                        count: count
-                    }));
-            },
-            
-            // Export analytics data
-            exportData: function() {
-                const data = this.getSummary();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `area-map-analytics-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            },
-            
-            // Clear analytics data
-            clearData: function() {
-                if (confirm('Are you sure you want to clear all analytics data? This cannot be undone.')) {
-                    localStorage.removeItem('areaMapAnalytics');
-                    this.events = {
-                        areaHovers: {},
-                        areaClicks: {},
-                        queries: { total: 0, byRegion: {}, byArea: {}, byCoverageType: {} },
-                        sessions: []
-                    };
-                    this.init();
-                    console.log('Analytics data cleared');
-                }
-            }
-        };
+            console.log('Click logged:', clickData);
+        }
         
         // Generate unique session ID
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Append to localStorage for analytics dashboard
+        function appendToLocalStorage(clickData) {
+            try {
+                let clickLog = [];
+                const saved = localStorage.getItem('areaMapClickLog');
+                if (saved) {
+                    clickLog = JSON.parse(saved);
+                }
+                clickLog.push(clickData);
+                
+                // Keep only last 1000 records to prevent localStorage overflow
+                if (clickLog.length > 1000) {
+                    clickLog = clickLog.slice(-1000);
+                }
+                
+                localStorage.setItem('areaMapClickLog', JSON.stringify(clickLog));
+            } catch (e) {
+                console.log('Could not save to localStorage:', e);
+            }
+        }
+        
+        // Write to AreaMapAnalytics.csv file automatically (for admin tracking)
+        function writeToCSVFile(clickData) {
+            const csvRow = [
+                clickData.timestamp,
+                clickData.date,
+                clickData.time,
+                clickData.areaCode,
+                clickData.areaName.replace(/,/g, ';'),
+                clickData.region,
+                clickData.sessionId,
+                `"${clickData.userAgent.replace(/"/g, '""')}"`,
+                clickData.url
+            ].join(',');
+            
+            console.log('Appending to AreaMapAnalytics.csv:', csvRow);
+            
+            // Append to AreaMapAnalytics.csv in the same directory as AreaMap.html
+            appendToMasterCSV(csvRow);
+        }
+        
+        // Append data to AreaMapAnalytics.csv file (same directory)
+        function appendToMasterCSV(csvRow) {
+            // For SharePoint, this will use REST API to append to the CSV file
+            const csvFileName = 'AreaMapAnalytics.csv';
+            const csvUrl = './' + csvFileName;
+            
+            if (typeof _spPageContextInfo !== 'undefined') {
+                // SharePoint environment - use REST API
+                appendToSharePointCSV(csvUrl, csvRow);
+            } else {
+                // Development/local environment - simulate the append
+                console.log('Would append to:', csvUrl);
+                console.log('CSV row:', csvRow);
+                
+                // Store for potential manual export/testing
+                if (!window.masterCSVData) {
+                    window.masterCSVData = ['Timestamp,Date,Time,AreaCode,AreaName,Region,SessionId,UserAgent,URL'];
+                }
+                window.masterCSVData.push(csvRow);
+                
+                // For testing: show updated master CSV content
+                console.log('Master CSV content:', window.masterCSVData.join('\\n'));
+            }
+        }
+        
+        // SharePoint REST API function to append to CSV file
+        function appendToSharePointCSV(csvUrl, csvRow) {
+            // First, get the current CSV content
+            fetch(csvUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/plain'
+                }
+            })
+            .then(response => response.text())
+            .then(currentContent => {
+                // Append new row
+                const updatedContent = currentContent.trim() + '\\n' + csvRow;
+                
+                // Update the file using SharePoint REST API
+                const fileUrl = _spPageContextInfo.webAbsoluteUrl + 
+                    "/_api/web/getfilebyserverrelativeurl('" + 
+                    csvUrl.replace(_spPageContextInfo.webAbsoluteUrl, '') + 
+                    "')/\\$value";
+                
+                return fetch(fileUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json;odata=verbose',
+                        'X-RequestDigest': document.getElementById('__REQUESTDIGEST').value,
+                        'X-HTTP-Method': 'PUT',
+                        'Content-Type': 'text/plain'
+                    },
+                    body: updatedContent
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Successfully appended to AreaMapAnalytics.csv');
+                } else {
+                    console.error('❌ Failed to append to AreaMapAnalytics.csv:', response.statusText);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error appending to CSV:', error);
+                // Fallback: store in localStorage for later retry
+                storeForRetry(csvRow);
+            });
+        }
+        
+        // Store failed writes for retry
+        function storeForRetry(csvRow) {
+            try {
+                let failedWrites = JSON.parse(localStorage.getItem('failedCSVWrites') || '[]');
+                failedWrites.push({
+                    timestamp: new Date().toISOString(),
+                    csvRow: csvRow
+                });
+                localStorage.setItem('failedCSVWrites', JSON.stringify(failedWrites));
+                console.log('📝 Stored failed write for retry');
+            } catch (e) {
+                console.error('Failed to store for retry:', e);
+            }
         }
         
         // Area name mapping (supports both A1 and A01 formats)
@@ -930,8 +917,6 @@
             console.log('🚀 DOM Content Loaded - Starting initialization...');
             console.log('Initial personnel data:', personnelData);
             
-            // Initialize analytics tracking
-            analytics.init();
             
             // Add immediate event listeners first
             setupEventListeners();
@@ -958,7 +943,6 @@
         } else {
             console.log('📋 Document already loaded, initializing immediately...');
             setTimeout(function() {
-                analytics.init();
                 setupEventListeners();
                 initializeMap();
                 if (!personnelData || personnelData.length === 0) {
@@ -1083,9 +1067,9 @@
             
             console.log('Area clicked:', { pathId, areaCode, areaName, region });
             
-            // Track click analytics
-            if (areaName) {
-                analytics.trackClick(areaCode, areaName);
+            // Log the click for analytics
+            if (areaName && region) {
+                logAreaClick(areaCode, areaName, region);
             }
             
             // Update dropdowns
@@ -1125,21 +1109,6 @@
                 path.setAttribute('data-pulse-added', 'true');
             }
             
-            // Track hover analytics
-            const pathId = path.getAttribute('id');
-            if (pathId) {
-                const parts = pathId.split('_');
-                if (parts.length >= 2) {
-                    const areaCode = parts[0];
-                    const areaName = areaNames[areaCode];
-                    if (areaName) {
-                        analytics.trackHover(areaCode, areaName);
-                        console.log(`Hover tracked: ${areaName} (${areaCode})`);
-                    } else {
-                        console.log(`Area name not found for code: ${areaCode}`);
-                    }
-                }
-            }
         }
         
         // Handle area leave
@@ -1217,33 +1186,6 @@
                 console.error('❌ Reset button not found!');
             }
             
-            // Test modal button handler
-            const testBtn = document.getElementById('test-modal-button');
-            if (testBtn) {
-                testBtn.addEventListener('click', function() {
-                    console.log('🧪 Test modal button clicked - showing modal...');
-                    showPersonnelModal(
-                        'Test Modal - Enhanced Features', 
-                        'This is a test of the enhanced modal with animations and styling', 
-                        [
-                            {
-                                Title: 'Test Person',
-                                UserEmail: 'test@company.com',
-                                FirstName: 'Test',
-                                LastName: 'Person',
-                                UserJobTitle: 'Test Engineer',
-                                PrimaryAreaIDs: ['A1'],
-                                SecondaryAreaIDs: ['B2'],
-                                coverageType: 'primary'
-                            }
-                        ]
-                    );
-                });
-                console.log('✅ Test modal button listener added');
-            } else {
-                console.error('❌ Test modal button not found!');
-            }
-            
             console.log('🎯 All basic event listeners setup complete');
         }
 
@@ -1286,9 +1228,6 @@
             const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
 
             console.log('🔍 Performing query:', { region, area, coverageType });
-
-            // Track query analytics
-            analytics.trackQuery(region, area, coverageType);
 
             // Check if SVG is available before trying to highlight
             const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
@@ -1867,20 +1806,8 @@
             }
         }
         
-        // Analytics event handlers - Add after DOM is loaded
+        // Modal event handlers - Add after DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Analytics button handlers
-            document.getElementById('analytics-button').addEventListener('click', showAnalyticsPanel);
-            document.getElementById('close-analytics').addEventListener('click', hideAnalyticsPanel);
-            document.getElementById('export-analytics').addEventListener('click', function() {
-                analytics.exportData();
-            });
-            document.getElementById('view-analytics').addEventListener('click', showAnalyticsDetails);
-            document.getElementById('clear-analytics').addEventListener('click', function() {
-                analytics.clearData();
-                updateAnalyticsSummary();
-            });
-            
             // Modal event handlers
             const modalClose = document.getElementById('modal-close');
             const modalCloseFooter = document.getElementById('modal-close-footer');
@@ -1910,78 +1837,6 @@
                 }
             });
         });
-        
-        // Show analytics panel
-        function showAnalyticsPanel() {
-            document.getElementById('analytics-panel').style.display = 'block';
-            updateAnalyticsSummary();
-        }
-        
-        // Hide analytics panel
-        function hideAnalyticsPanel() {
-            document.getElementById('analytics-panel').style.display = 'none';
-        }
-        
-        // Update analytics summary display
-        function updateAnalyticsSummary() {
-            const summary = analytics.getSummary();
-            const summaryDiv = document.getElementById('analytics-summary');
-            
-            summaryDiv.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
-                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
-                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalHovers}</div>
-                        <div style="font-size: 12px; color: #666;">Total Hovers</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
-                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalClicks}</div>
-                        <div style="font-size: 12px; color: #666;">Total Clicks</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
-                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalQueries}</div>
-                        <div style="font-size: 12px; color: #666;">Total Queries</div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <strong>Most Popular Areas (Clicks):</strong><br>
-                    ${summary.interactions.mostClickedAreas.slice(0, 3).map(area => 
-                        `• ${area.area}: ${area.count} clicks`
-                    ).join('<br>') || 'No data yet'}
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    Session: ${summary.sessionInfo.sessionId}<br>
-                    Total Sessions Recorded: ${summary.sessionInfo.totalSessions}
-                </div>
-            `;
-        }
-        
-        // Show detailed analytics in console and alert
-        function showAnalyticsDetails() {
-            const summary = analytics.getSummary();
-            console.log('Detailed Analytics:', summary);
-            
-            alert(`Detailed Analytics:
-            
-Session Info:
-• Session ID: ${summary.sessionInfo.sessionId}
-• Total Sessions: ${summary.sessionInfo.totalSessions}
-
-Interactions:
-• Total Hovers: ${summary.interactions.totalHovers}
-• Total Clicks: ${summary.interactions.totalClicks}
-• Total Queries: ${summary.interactions.totalQueries}
-
-Most Clicked Areas:
-${summary.interactions.mostClickedAreas.map(area => `• ${area.area}: ${area.count}`).join('\n')}
-
-Popular Regions:
-${Object.entries(summary.interactions.popularRegions).map(([region, count]) => `• ${region}: ${count}`).join('\n')}
-
-Coverage Preferences:
-${Object.entries(summary.interactions.coverageTypePreferences).map(([type, count]) => `• ${type}: ${count}`).join('\n')}
-
-See browser console for full data.`);
-        }
     </script>
 </body>
 </html>
