@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Area Map - Personnel Query</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Area Map - Personnel Query - UPDATED VERSION</title>
     <style>
         /* Base styles */
         body {
@@ -123,12 +126,19 @@
             padding-top: 20px;
         }
         .profile-image {
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: 12px;
-            border: 1px solid #ddd;
+            margin-right: 16px;
+            border: 3px solid #e3f2fd;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .profile-image:hover {
+            border-color: #0078d4;
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(0, 120, 212, 0.3);
         }
         .user-details {
             flex: 1;
@@ -228,26 +238,32 @@
             color: #333;
             margin-left: 10px;
         }
-        /* Side Modal styles */
+        /* Side Modal styles - Enhanced */
         .modal-overlay {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 400px;
+            width: 420px;
             max-height: calc(100vh - 40px);
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            border: 1px solid #e0e0e0;
+            border: 2px solid #e3f2fd;
+            backdrop-filter: blur(10px);
         }
         .modal-overlay.show {
-            transform: translateX(0);
+            transform: translateX(0) scale(1);
+            opacity: 1;
+        }
+        .modal-overlay.hide {
+            transform: translateX(120%) scale(0.95);
+            opacity: 0;
         }
         .modal-container {
             display: flex;
@@ -255,47 +271,99 @@
             height: 100%;
         }
         .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 24px;
+            border-bottom: 2px solid #e3f2fd;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            position: relative;
+        }
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
         }
         .modal-header h3 {
             margin: 0;
-            color: #0078d4;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            position: relative;
         }
         .modal-close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-size: 20px;
             cursor: pointer;
-            color: #666;
+            color: white;
             padding: 0;
-            width: 30px;
-            height: 30px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+            z-index: 1;
+            position: relative;
         }
         .modal-close-btn:hover {
-            background-color: #f0f0f0;
-            color: #333;
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .modal-close-btn:active {
+            transform: scale(0.95);
         }
         .modal-body {
-            padding: 20px;
+            padding: 24px;
             overflow-y: auto;
             flex: 1;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #0078d4, #106ebe);
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #106ebe, #005a9e);
         }
         .modal-summary {
-            font-weight: 500;
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #f0f6fc;
-            border-radius: 4px;
-            border-left: 4px solid #0078d4;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f0f6fc 100%);
+            border-radius: 8px;
+            border-left: 5px solid #0078d4;
+            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-summary::before {
+            content: '👥';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 20px;
+            opacity: 0.3;
         }
         .modal-personnel-list {
             display: flex;
@@ -303,20 +371,90 @@
             gap: 15px;
         }
         .modal-person-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #fafafa;
+            border: 2px solid #e8f4fd;
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-person-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #0078d4, #106ebe);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        .modal-person-card:hover {
+            border-color: #b3d9ff;
+            box-shadow: 0 4px 16px rgba(0, 120, 212, 0.15);
+            transform: translateY(-2px);
+        }
+        .modal-person-card:hover::before {
+            transform: scaleY(1);
         }
         .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #e0e0e0;
-            background-color: #f8f9fa;
+            padding: 20px 24px;
+            border-top: 2px solid #e3f2fd;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
             display: flex;
             justify-content: flex-end;
+            gap: 12px;
+        }
+        .modal-footer .control-button {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-footer .control-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        .modal-footer .control-button:hover::before {
+            width: 100px;
+            height: 100px;
         }
         
         /* Responsive styles */
+        /* Floating animation for modal */
+        @keyframes modalFloat {
+            0%, 100% { transform: translateX(0) translateY(0) scale(1); }
+            50% { transform: translateX(0) translateY(-3px) scale(1.002); }
+        }
+        
+        /* Pulse animation for interactive elements */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 120, 212, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 120, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 120, 212, 0); }
+        }
+        
+        /* Shimmer animation for loading states */
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: calc(200px + 100%) 0; }
+        }
+        
+        .modal-person-card.loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200px 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -328,13 +466,19 @@
             .modal-overlay {
                 width: 95%;
                 right: 10px;
+                top: 10px;
                 max-height: calc(100vh - 20px);
+                border-radius: 8px;
             }
             .modal-header {
-                padding: 15px;
+                padding: 16px;
             }
             .modal-body {
-                padding: 15px;
+                padding: 16px;
+            }
+            .modal-person-card {
+                padding: 16px;
+                margin-bottom: 12px;
             }
         }
     </style>
@@ -391,6 +535,7 @@
                 <button id="query-button" class="control-button">Search</button>
                 <button id="reset-button" class="control-button button-secondary">Reset</button>
                 <button id="analytics-button" class="control-button button-secondary" style="margin-left: 10px;">📊 Analytics</button>
+                <button id="test-modal-button" class="control-button" style="background-color: #d13438 !important; margin-left: 10px; font-size: 16px !important; padding: 12px 20px !important; animation: pulse 2s infinite !important;">🧪 TEST MODAL - CLICK ME!</button>
             </div>
         </div>
         
@@ -782,13 +927,19 @@
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded - Starting initialization...');
             console.log('Initial personnel data:', personnelData);
             
             // Initialize analytics tracking
             analytics.init();
             
-            initializeMap();
+            // Add immediate event listeners first
             setupEventListeners();
+            console.log('✅ Event listeners setup complete');
+            
+            // Then initialize map
+            initializeMap();
+            console.log('✅ Map initialization started');
             
             // Load CSV data if no SharePoint data is present
             if (!personnelData || personnelData.length === 0) {
@@ -797,7 +948,26 @@
                 // Perform initial query with existing data
                 performQuery();
             }
+            
+            console.log('🎉 Initialization complete!');
         });
+        
+        // Backup initialization in case DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            console.log('📋 Document still loading, waiting for DOMContentLoaded...');
+        } else {
+            console.log('📋 Document already loaded, initializing immediately...');
+            setTimeout(function() {
+                analytics.init();
+                setupEventListeners();
+                initializeMap();
+                if (!personnelData || personnelData.length === 0) {
+                    loadCSVData();
+                } else {
+                    performQuery();
+                }
+            }, 100);
+        }
 
         // Initialize map and event handlers
         function initializeMap() {
@@ -926,6 +1096,10 @@
                 if (areaName) {
                     document.getElementById('area-select').value = areaName;
                     performQuery();
+                } else {
+                    // Force show modal even if area name not found
+                    console.log('⚠️ Area name not found, forcing modal display');
+                    showPersonnelModal('Test Area', 'Testing modal display', []);
                 }
             }, 100);
         }
@@ -935,15 +1109,21 @@
             const path = event.target;
             console.log('Hover detected on:', path.getAttribute('id'));
             
-            // Add visual hover effect with immediate styling
+            // Add visual hover effect with enhanced styling
             path.classList.add('hover');
             
-            // Force immediate style update to ensure hover effect is visible
-            path.style.opacity = '0.9';
-            path.style.filter = 'brightness(1.3) saturate(1.2)';
-            path.style.transform = 'scale(1.02)';
+            // Enhanced hover effects with glow
+            path.style.opacity = '0.95';
+            path.style.filter = 'brightness(1.4) saturate(1.3) drop-shadow(0 0 8px rgba(0, 120, 212, 0.6))';
+            path.style.transform = 'scale(1.03)';
             path.style.transformOrigin = 'center';
-            path.style.transition = 'all 0.3s ease';
+            path.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            
+            // Add pulse animation
+            if (!path.hasAttribute('data-pulse-added')) {
+                path.style.animation = 'pulse 2s infinite';
+                path.setAttribute('data-pulse-added', 'true');
+            }
             
             // Track hover analytics
             const pathId = path.getAttribute('id');
@@ -967,8 +1147,10 @@
             const path = event.target;
             console.log('Mouse left:', path.getAttribute('id'));
             
-            // Remove hover class
+            // Remove hover class and effects
             path.classList.remove('hover');
+            path.style.animation = '';
+            path.removeAttribute('data-pulse-added');
             
             // Reset styles only if not selected
             if (!path.classList.contains('selected')) {
@@ -981,11 +1163,23 @@
 
         // Set up event listeners
         function setupEventListeners() {
+            console.log('🔧 Setting up event listeners...');
+            
             // Region select change handler
             const regionSelect = document.getElementById('region-select');
             const areaSelect = document.getElementById('area-select');
+            
+            if (!regionSelect) {
+                console.error('❌ Region select element not found!');
+                return;
+            }
+            if (!areaSelect) {
+                console.error('❌ Area select element not found!');
+                return;
+            }
 
             regionSelect.addEventListener('change', function(event) {
+                console.log('🔄 Region changed:', event.target.value);
                 const region = event.target.value;
                 updateAreaDropdown(region);
                 // Auto-perform query when region changes
@@ -994,15 +1188,63 @@
 
             // Area select change handler
             areaSelect.addEventListener('change', function() {
+                console.log('🔄 Area changed:', event.target.value);
                 // Auto-perform query when area changes
                 performQuery();
             });
             
             // Query button handler
-            document.getElementById('query-button').addEventListener('click', performQuery);
+            const queryBtn = document.getElementById('query-button');
+            if (queryBtn) {
+                queryBtn.addEventListener('click', function() {
+                    console.log('🔍 Query button clicked');
+                    performQuery();
+                });
+                console.log('✅ Query button listener added');
+            } else {
+                console.error('❌ Query button not found!');
+            }
 
             // Reset button handler  
-            document.getElementById('reset-button').addEventListener('click', resetQuery);
+            const resetBtn = document.getElementById('reset-button');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    console.log('🔄 Reset button clicked');
+                    resetQuery();
+                });
+                console.log('✅ Reset button listener added');
+            } else {
+                console.error('❌ Reset button not found!');
+            }
+            
+            // Test modal button handler
+            const testBtn = document.getElementById('test-modal-button');
+            if (testBtn) {
+                testBtn.addEventListener('click', function() {
+                    console.log('🧪 Test modal button clicked - showing modal...');
+                    showPersonnelModal(
+                        'Test Modal - Enhanced Features', 
+                        'This is a test of the enhanced modal with animations and styling', 
+                        [
+                            {
+                                Title: 'Test Person',
+                                UserEmail: 'test@company.com',
+                                FirstName: 'Test',
+                                LastName: 'Person',
+                                UserJobTitle: 'Test Engineer',
+                                PrimaryAreaIDs: ['A1'],
+                                SecondaryAreaIDs: ['B2'],
+                                coverageType: 'primary'
+                            }
+                        ]
+                    );
+                });
+                console.log('✅ Test modal button listener added');
+            } else {
+                console.error('❌ Test modal button not found!');
+            }
+            
+            console.log('🎯 All basic event listeners setup complete');
         }
 
         // Update area dropdown based on selected region
@@ -1043,18 +1285,26 @@
             const area = document.getElementById('area-select').value;
             const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
 
+            console.log('🔍 Performing query:', { region, area, coverageType });
+
             // Track query analytics
             analytics.trackQuery(region, area, coverageType);
 
-            clearAllHighlights();
+            // Check if SVG is available before trying to highlight
+            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            if (svgObject && svgObject.contentDocument) {
+                clearAllHighlights();
 
-            // Always show results, even if no region selected
-            if (region) {
-                if (area) {
-                    highlightArea(region, area);
-                } else {
-                    highlightRegion(region);
+                // Always show results, even if no region selected
+                if (region) {
+                    if (area) {
+                        highlightArea(region, area);
+                    } else {
+                        highlightRegion(region);
+                    }
                 }
+            } else {
+                console.warn('⚠️ SVG not ready for highlighting, skipping map updates');
             }
 
             displayQueryResults(region, area, coverageType);
@@ -1083,10 +1333,20 @@
 
         // Clear all highlights from the map
         function clearAllHighlights() {
-            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
-            if (!svgDoc) return;
+            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            if (!svgObject) {
+                console.warn('⚠️ SVG object not found');
+                return;
+            }
+            
+            const svgDoc = svgObject.contentDocument;
+            if (!svgDoc) {
+                console.warn('⚠️ SVG document not accessible - may still be loading');
+                return;
+            }
 
             const paths = svgDoc.querySelectorAll('path');
+            console.log(`🧹 Clearing highlights from ${paths.length} paths`);
             paths.forEach(path => {
                 path.classList.remove('selected');
                 path.classList.remove('hover');
@@ -1103,13 +1363,26 @@
 
         // Highlight all areas in a specific region
         function highlightRegion(region) {
-            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
-            if (!svgDoc) return;
+            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            if (!svgObject) {
+                console.warn('⚠️ SVG object not found for region highlighting');
+                return;
+            }
+            
+            const svgDoc = svgObject.contentDocument;
+            if (!svgDoc) {
+                console.warn('⚠️ SVG document not accessible for region highlighting');
+                return;
+            }
 
             const regionGroup = svgDoc.querySelector(`#${region}`);
-            if (!regionGroup) return;
+            if (!regionGroup) {
+                console.warn(`⚠️ Region group '${region}' not found in SVG`);
+                return;
+            }
 
             const paths = regionGroup.querySelectorAll('path');
+            console.log(`🎯 Highlighting ${paths.length} paths in region '${region}'`);
             paths.forEach(path => {
                 path.classList.add('selected');
             });
@@ -1117,11 +1390,21 @@
 
         // Highlight a specific area
         function highlightArea(region, area) {
-            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
-            if (!svgDoc) return;
+            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            if (!svgObject) {
+                console.warn('⚠️ SVG object not found for area highlighting');
+                return;
+            }
+            
+            const svgDoc = svgObject.contentDocument;
+            if (!svgDoc) {
+                console.warn('⚠️ SVG document not accessible for area highlighting');
+                return;
+            }
 
             // Find all paths in the SVG
             const paths = svgDoc.querySelectorAll('path');
+            console.log(`🔍 Looking for area '${area}' in ${paths.length} paths`);
             
             // Look for the path that matches this area
             for (const path of paths) {
@@ -1136,6 +1419,7 @@
                 
                 // Check if this area code maps to our selected area name
                 if (areaNames[areaCode] === area) {
+                    console.log(`🎯 Found matching area: ${pathId} for '${area}'`);
                     path.classList.add('selected');
                     break;
                 }
@@ -1179,14 +1463,12 @@
             // Update the summary in the regular results area
             resultsSummary.textContent = summaryText;
 
-            // Show modal if there are personnel to display and it's an actual search/click
-            if (matchingPersonnel.length > 0 && (region || area)) {
-                console.log('📱 About to show modal...');
+            // Always show modal for any search/click (even if no results)
+            if (region || area) {
+                console.log('📱 About to show modal...', { region, area, personnelCount: matchingPersonnel.length });
                 showPersonnelModal(modalTitle, summaryText, matchingPersonnel);
-            } else if (matchingPersonnel.length === 0 && (region || area)) {
-                // Show modal even for empty results if it's a specific search
-                console.log('📱 Showing modal for empty results...');
-                showPersonnelModal(modalTitle, summaryText, []);
+            } else {
+                console.log('📱 No region/area selected, skipping modal');
             }
 
             // Update the regular results list only when modal is NOT shown
@@ -1206,7 +1488,7 @@
             }
         }
         
-        // Show personnel modal
+        // Show personnel modal with enhanced animations
         function showPersonnelModal(title, summary, personnelList) {
             console.log('showPersonnelModal called with:', { title, summary, personnelCount: personnelList.length });
             
@@ -1215,51 +1497,154 @@
             const modalSummary = document.getElementById('modal-summary');
             const modalPersonnelList = document.getElementById('modal-personnel-list');
             
-            // Set modal content
-            modalTitle.textContent = title;
+            // Add backdrop overlay without blur effect
+            let backdrop = document.getElementById('modal-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'modal-backdrop';
+                backdrop.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.3);
+                    z-index: 999;
+                    opacity: 0;
+                    transition: all 0.4s ease;
+                `;
+                document.body.appendChild(backdrop);
+                
+                // Add click handler to close modal when clicking backdrop
+                backdrop.addEventListener('click', function(e) {
+                    if (e.target === backdrop) {
+                        hidePersonnelModal();
+                    }
+                });
+            }
+            
+            backdrop.style.display = 'block';
+            // Force reflow then show
+            backdrop.offsetHeight;
+            backdrop.style.opacity = '1';
+            
+            // Set modal content with typing animation for title
+            modalTitle.textContent = '';
             modalSummary.textContent = summary;
             
-            // Clear and populate personnel list
+            // Animate title typing
+            let titleIndex = 0;
+            const typeTitle = () => {
+                if (titleIndex < title.length) {
+                    modalTitle.textContent += title.charAt(titleIndex);
+                    titleIndex++;
+                    setTimeout(typeTitle, 50);
+                }
+            };
+            
+            // Clear and populate personnel list with staggered animations
             modalPersonnelList.innerHTML = '';
             
             if (personnelList.length > 0) {
                 personnelList.forEach((person, index) => {
                     const personCard = createPersonCard(person, true);
+                    personCard.style.opacity = '0';
+                    personCard.style.transform = 'translateY(20px)';
+                    personCard.style.transition = 'all 0.4s ease';
                     modalPersonnelList.appendChild(personCard);
+                    
+                    // Staggered animation
+                    setTimeout(() => {
+                        personCard.style.opacity = '1';
+                        personCard.style.transform = 'translateY(0)';
+                    }, 200 + (index * 100));
                 });
             } else {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'modal-person-card';
-                emptyMessage.innerHTML = '<em>No personnel found matching the selected criteria</em>';
+                emptyMessage.innerHTML = '<em style="color: #666; font-size: 16px;">🔍 No personnel found matching the selected criteria</em>';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.padding = '40px 20px';
                 modalPersonnelList.appendChild(emptyMessage);
             }
             
-            // Show modal with slide animation
+            // Show modal with enhanced slide animation
             modal.style.display = 'flex';
+            modal.style.opacity = '0';
+            modal.style.transform = 'translateX(120%) scale(0.95)';
             
-            // Force reflow then add show class for animation
+            // Force reflow then animate
             modal.offsetHeight;
+            modal.style.transition = 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            modal.style.opacity = '1';
+            modal.style.transform = 'translateX(0) scale(1)';
             modal.classList.add('show');
+            
+            // Start title typing after modal appears
+            setTimeout(typeTitle, 200);
+            
+            // Add floating animation
+            setTimeout(() => {
+                modal.style.animation = 'modalFloat 3s ease-in-out infinite';
+            }, 600);
             
             // Focus trap for accessibility
             const closeBtn = document.getElementById('modal-close');
             if (closeBtn) {
-                closeBtn.focus();
+                setTimeout(() => closeBtn.focus(), 400);
             }
+            
+            // Add escape key listener
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    hidePersonnelModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
         }
         
-        // Hide personnel modal
+        // Hide personnel modal with enhanced animations
         function hidePersonnelModal() {
             console.log('hidePersonnelModal called');
             const modal = document.getElementById('personnel-modal');
             if (modal) {
-                // Slide out animation
+                // Remove floating animation
+                modal.style.animation = '';
+                
+                // Slide out animation with scale
+                modal.style.transition = 'all 0.3s cubic-bezier(0.55, 0, 0.55, 0.2)';
+                modal.style.opacity = '0';
+                modal.style.transform = 'translateX(120%) scale(0.9)';
                 modal.classList.remove('show');
+                modal.classList.add('hide');
+                
+                // Remove backdrop overlay
+                const backdrop = document.getElementById('modal-backdrop');
+                if (backdrop) {
+                    backdrop.style.opacity = '0';
+                    setTimeout(() => {
+                        backdrop.style.display = 'none';
+                    }, 400);
+                }
+                
+                // Animate person cards out
+                const personCards = modal.querySelectorAll('.modal-person-card');
+                personCards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                    }, index * 50);
+                });
                 
                 // Hide after animation completes
                 setTimeout(() => {
                     modal.style.display = 'none';
-                }, 300);
+                    modal.classList.remove('hide');
+                    modal.style.transform = '';
+                    modal.style.opacity = '';
+                    modal.style.transition = '';
+                }, 400);
             }
         }
         
