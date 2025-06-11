@@ -291,158 +291,396 @@
             <div class="control-group">
                 <button id="query-button" class="control-button">Search</button>
                 <button id="reset-button" class="control-button button-secondary">Reset</button>
+                <button id="analytics-button" class="control-button button-secondary" style="margin-left: 10px;">📊 Analytics</button>
+            </div>
+        </div>
+        
+        <!-- Analytics Panel -->
+        <div id="analytics-panel" class="controls-container" style="display: none;">
+            <h3>📊 Usage Analytics</h3>
+            <div class="control-group">
+                <div id="analytics-summary"></div>
+            </div>
+            <div class="control-group">
+                <button id="export-analytics" class="control-button">Export Data</button>
+                <button id="view-analytics" class="control-button button-secondary">View Details</button>
+                <button id="clear-analytics" class="control-button" style="background-color: #d13438;">Clear Data</button>
+                <button id="close-analytics" class="control-button button-secondary">Close</button>
             </div>
         </div>
         
         <!-- Results Container -->
-        <div class="results-container" style="display: none;">
-            <h3>Search Results</h3>
-            <div id="results-summary"></div>
+        <div class="results-container">
+            <h3>Personnel Details</h3>
+            <div id="results-summary">Click on an area or use the search controls above to view personnel</div>
             <ul id="results-list" class="personnel-results-list"></ul>
         </div>
     </div>
 
     <script>
         // Global variables
-        var personnelData = /*@SHAREPOINT_DATA@*/[
-            {
-                "Title": "John Smith",
-                "FirstName": "John",
-                "LastName": "Smith",
-                "PreferredFirstName": "Johnny",
-                "UserEmail": "john.smith@company.com",
-                "UserDepartment": "Sales",
-                "UserJobTitle": "Sales Engineer",
-                "PrimaryAreaIDs": ["A1", "A2"],
-                "SecondaryAreaIDs": ["B1"],
-                "Manager": {
-                    "DisplayName": "Jane Manager",
-                    "Email": "jane.manager@company.com",
-                    "Department": "Sales",
-                    "JobTitle": "Regional Manager"
+        var personnelData = /*@SHAREPOINT_DATA@*/[]/*@END_SHAREPOINT_DATA@*/;
+        
+        // Analytics tracking system
+        var analytics = {
+            sessionId: generateSessionId(),
+            startTime: new Date().toISOString(),
+            events: {
+                areaHovers: {},      // Track hover counts per area
+                areaClicks: {},      // Track click counts per area
+                queries: {           // Track query executions
+                    total: 0,
+                    byRegion: {},
+                    byArea: {},
+                    byCoverageType: {}
+                },
+                sessions: []         // Track session data
+            },
+            
+            // Initialize analytics from localStorage
+            init: function() {
+                const saved = localStorage.getItem('areaMapAnalytics');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        this.events = { ...this.events, ...data };
+                    } catch (e) {
+                        console.log('Could not load analytics data:', e);
+                    }
+                }
+                
+                // Record session start
+                this.events.sessions.push({
+                    sessionId: this.sessionId,
+                    startTime: this.startTime,
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+                
+                this.save();
+            },
+            
+            // Save analytics to localStorage
+            save: function() {
+                try {
+                    localStorage.setItem('areaMapAnalytics', JSON.stringify(this.events));
+                } catch (e) {
+                    console.log('Could not save analytics data:', e);
                 }
             },
-            {
-                "Title": "Jane Manager",
-                "FirstName": "Jane",
-                "LastName": "Manager",
-                "UserEmail": "jane.manager@company.com",
-                "UserDepartment": "Sales",
-                "UserJobTitle": "Regional Manager",
-                "PrimaryAreaIDs": ["B1", "B2", "B3"],
-                "SecondaryAreaIDs": [],
-                "Manager": {
-                    "DisplayName": "Tom Director",
-                    "Email": "tom.director@company.com",
-                    "Department": "Executive",
-                    "JobTitle": "Sales Director"
-                }
+            
+            // Track area hover
+            trackHover: function(areaCode, areaName) {
+                const key = `${areaCode}_${areaName}`;
+                this.events.areaHovers[key] = (this.events.areaHovers[key] || 0) + 1;
+                this.save();
+                console.log(`Hover tracked: ${areaName} (${this.events.areaHovers[key]} times)`);
             },
-            {
-                "Title": "Bob Wilson",
-                "FirstName": "Robert",
-                "LastName": "Wilson",
-                "PreferredFirstName": "Bob",
-                "UserEmail": "bob.wilson@company.com",
-                "UserDepartment": "Technical",
-                "UserJobTitle": "Support Engineer",
-                "PrimaryAreaIDs": ["C1"],
-                "SecondaryAreaIDs": ["A3", "A4"],
-                "Manager": {
-                    "DisplayName": "Jane Manager",
-                    "Email": "jane.manager@company.com",
-                    "Department": "Sales",
-                    "JobTitle": "Regional Manager"
+            
+            // Track area click
+            trackClick: function(areaCode, areaName) {
+                const key = `${areaCode}_${areaName}`;
+                this.events.areaClicks[key] = (this.events.areaClicks[key] || 0) + 1;
+                this.save();
+                console.log(`Click tracked: ${areaName} (${this.events.areaClicks[key]} times)`);
+            },
+            
+            // Track query execution
+            trackQuery: function(region, area, coverageType) {
+                this.events.queries.total++;
+                
+                if (region) {
+                    this.events.queries.byRegion[region] = (this.events.queries.byRegion[region] || 0) + 1;
+                }
+                
+                if (area) {
+                    this.events.queries.byArea[area] = (this.events.queries.byArea[area] || 0) + 1;
+                }
+                
+                this.events.queries.byCoverageType[coverageType] = (this.events.queries.byCoverageType[coverageType] || 0) + 1;
+                
+                this.save();
+                console.log(`Query tracked: Region=${region}, Area=${area}, Coverage=${coverageType}`);
+            },
+            
+            // Get analytics summary
+            getSummary: function() {
+                return {
+                    sessionInfo: {
+                        sessionId: this.sessionId,
+                        startTime: this.startTime,
+                        totalSessions: this.events.sessions.length
+                    },
+                    interactions: {
+                        totalHovers: Object.values(this.events.areaHovers).reduce((a, b) => a + b, 0),
+                        totalClicks: Object.values(this.events.areaClicks).reduce((a, b) => a + b, 0),
+                        totalQueries: this.events.queries.total,
+                        mostHoveredAreas: this.getTopAreas(this.events.areaHovers, 5),
+                        mostClickedAreas: this.getTopAreas(this.events.areaClicks, 5),
+                        popularRegions: this.events.queries.byRegion,
+                        coverageTypePreferences: this.events.queries.byCoverageType
+                    },
+                    rawData: this.events
+                };
+            },
+            
+            // Get top areas by interaction count
+            getTopAreas: function(data, limit = 5) {
+                return Object.entries(data)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, limit)
+                    .map(([key, count]) => ({
+                        area: key.split('_').slice(1).join(' '),
+                        count: count
+                    }));
+            },
+            
+            // Export analytics data
+            exportData: function() {
+                const data = this.getSummary();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `area-map-analytics-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+            
+            // Clear analytics data
+            clearData: function() {
+                if (confirm('Are you sure you want to clear all analytics data? This cannot be undone.')) {
+                    localStorage.removeItem('areaMapAnalytics');
+                    this.events = {
+                        areaHovers: {},
+                        areaClicks: {},
+                        queries: { total: 0, byRegion: {}, byArea: {}, byCoverageType: {} },
+                        sessions: []
+                    };
+                    this.init();
+                    console.log('Analytics data cleared');
                 }
             }
-        ]/*@END_SHAREPOINT_DATA@*/;
+        };
+        
+        // Generate unique session ID
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Area name mapping (supports both A1 and A01 formats)
+        var areaNames = {
+            'A1': 'Baltimore Coast',
+            'A01': 'Baltimore Coast',
+            'A2': 'South East',
+            'A02': 'South East',
+            'A3': 'New England',
+            'A03': 'New England',
+            'A4': 'New York',
+            'A04': 'New York',
+            'A5': 'Philadelphia',
+            'A05': 'Philadelphia',
+            'A6': 'Gulf Coast',
+            'A06': 'Gulf Coast',
+            'A7': 'Florida',
+            'A07': 'Florida',
+            'B1': 'Chicago',
+            'B01': 'Chicago',
+            'B2': 'Michigan',
+            'B02': 'Michigan',
+            'B3': 'Ohio Valley',
+            'B03': 'Ohio Valley',
+            'B4': 'Central Plains',
+            'B04': 'Central Plains',
+            'B5': 'North Central',
+            'B05': 'North Central',
+            'B6': 'Nashville',
+            'B06': 'Nashville',
+            'B7': 'St. Louis',
+            'B07': 'St. Louis',
+            'B8': 'Tulsa',
+            'B08': 'Tulsa',
+            'C1': 'Denver',
+            'C01': 'Denver',
+            'C2': 'Dallas',
+            'C02': 'Dallas',
+            'C3': 'Houston',
+            'C03': 'Houston',
+            'C4': 'Phoenix',
+            'C04': 'Phoenix',
+            'C5': 'Northern California',
+            'C05': 'Northern California',
+            'C6': 'Seattle',
+            'C06': 'Seattle',
+            'C7': 'Los Angeles',
+            'C07': 'Los Angeles'
+        };
+        
+        // Load CSV data if available
+        async function loadCSVData() {
+            try {
+                const response = await fetch('personnel_data.csv');
+                const csvText = await response.text();
+                const parsedData = parseCSV(csvText);
+                
+                // Only use CSV data if no SharePoint data is loaded
+                if (!personnelData || personnelData.length === 0) {
+                    personnelData = parsedData;
+                    console.log('Loaded personnel data from CSV:', personnelData);
+                }
+                
+                // Perform initial query to show all personnel
+                performQuery();
+            } catch (error) {
+                console.error('Error loading CSV file:', error);
+                // Use embedded test data if no CSV and no SharePoint data
+                if (!personnelData || personnelData.length === 0) {
+                    personnelData = [
+                        {
+                            "Title": "John Smith",
+                            "UserEmail": "john.smith@company.com",
+                            "UserDisplayName": "John Smith",
+                            "FirstName": "John",
+                            "LastName": "Smith",
+                            "PreferredFirstName": "Johnny",
+                            "UserDepartment": "Sales",
+                            "UserJobTitle": "Sales Engineer",
+                            "PrimaryAreaIDs": ["A1", "A2"],
+                            "SecondaryAreaIDs": ["B1"],
+                            "ManagerDisplayName": "Jane Manager",
+                            "ManagerEmail": "jane.manager@company.com",
+                            "ManagerDepartment": "Sales",
+                            "ManagerJobTitle": "Regional Manager"
+                        },
+                        {
+                            "Title": "Jane Manager",
+                            "UserEmail": "jane.manager@company.com",
+                            "UserDisplayName": "Jane Manager",
+                            "FirstName": "Jane",
+                            "LastName": "Manager",
+                            "UserDepartment": "Sales",
+                            "UserJobTitle": "Regional Manager",
+                            "PrimaryAreaIDs": ["B1", "B2", "B3"],
+                            "SecondaryAreaIDs": [],
+                            "ManagerDisplayName": "Tom Director",
+                            "ManagerEmail": "tom.director@company.com",
+                            "ManagerDepartment": "Executive",
+                            "ManagerJobTitle": "Sales Director"
+                        },
+                        {
+                            "Title": "Bob Wilson",
+                            "UserEmail": "bob.wilson@company.com",
+                            "UserDisplayName": "Bob Wilson",
+                            "FirstName": "Robert",
+                            "LastName": "Wilson",
+                            "PreferredFirstName": "Bob",
+                            "UserDepartment": "Technical",
+                            "UserJobTitle": "Support Engineer",
+                            "PrimaryAreaIDs": ["C1"],
+                            "SecondaryAreaIDs": ["A3", "A4"],
+                            "ManagerDisplayName": "Jane Manager",
+                            "ManagerEmail": "jane.manager@company.com",
+                            "ManagerDepartment": "Sales",
+                            "ManagerJobTitle": "Regional Manager"
+                        },
+                        {
+                            "Title": "Sarah Lee",
+                            "UserEmail": "sarah.lee@company.com",
+                            "UserDisplayName": "Sarah Lee",
+                            "FirstName": "Sarah",
+                            "LastName": "Lee",
+                            "UserDepartment": "Marketing",
+                            "UserJobTitle": "Marketing Specialist",
+                            "PrimaryAreaIDs": ["A2", "A3"],
+                            "SecondaryAreaIDs": ["B2", "B3"],
+                            "ManagerDisplayName": "Tom Director",
+                            "ManagerEmail": "tom.director@company.com",
+                            "ManagerDepartment": "Executive",
+                            "ManagerJobTitle": "Sales Director"
+                        },
+                        {
+                            "Title": "Tom Director",
+                            "UserEmail": "tom.director@company.com",
+                            "UserDisplayName": "Tom Director",
+                            "FirstName": "Thomas",
+                            "LastName": "Director",
+                            "PreferredFirstName": "Tom",
+                            "UserDepartment": "Executive",
+                            "UserJobTitle": "Sales Director",
+                            "PrimaryAreaIDs": ["A1", "B1", "C1"],
+                            "SecondaryAreaIDs": []
+                        }
+                    ];
+                }
+                performQuery();
+            }
+        }
+        
+        // Parse CSV data
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',');
+            const result = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                
+                const values = lines[i].split(',');
+                const item = {};
+                
+                // Parse each field according to CSV structure
+                item.Title = values[0] || '';
+                item.UserEmail = values[1] || '';
+                item.UserDisplayName = values[2] || '';
+                item.FirstName = values[3] || '';
+                item.LastName = values[4] || '';
+                item.PreferredFirstName = values[5] || '';
+                item.UserDepartment = values[6] || '';
+                item.UserJobTitle = values[7] || '';
+                
+                // Parse area IDs (semicolon separated)
+                item.PrimaryAreaIDs = values[8] ? values[8].split(';').filter(id => id) : [];
+                item.SecondaryAreaIDs = values[9] ? values[9].split(';').filter(id => id) : [];
+                
+                // Manager info
+                item.ManagerDisplayName = values[10] || '';
+                item.ManagerEmail = values[11] || '';
+                item.ManagerDepartment = values[12] || '';
+                item.ManagerJobTitle = values[13] || '';
+                
+                // Create Manager object for compatibility
+                item.Manager = item.ManagerDisplayName ? {
+                    DisplayName: item.ManagerDisplayName,
+                    Email: item.ManagerEmail,
+                    Department: item.ManagerDepartment,
+                    JobTitle: item.ManagerJobTitle
+                } : null;
+                
+                result.push(item);
+            }
+            
+            return result;
+        }
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Personnel data:', personnelData);
-            initializeMap();
-            setupEventListeners();
+            console.log('Initial personnel data:', personnelData);
             
-            // Perform initial query to show all personnel
-            performQuery();
-        });
-                    const values = row.split(',').map(v => v.trim());
-                    const item = {};
-                    
-                console.error('Error loading personnel data:', error);
-                alert('Error loading personnel data. Please try refreshing the page.');
-            }
-        }
-
-            function formatPersonnelData(rawData) {
-                if (!Array.isArray(rawData)) {
-                    console.warn('Expected array of personnel data, got:', typeof rawData);
-                    return [];
-                }
-                
-                return rawData.map(function(item) {
-                    // Ensure we have an object
-                    if (!item || typeof item !== 'object') {
-                        console.warn('Invalid personnel item:', item);
-                        return null;
-                    }
-
-                    // Extract area IDs safely
-                    function getAreaIds(field) {
-                        if (Array.isArray(field)) return field;
-                        if (field && Array.isArray(field.results)) return field.results;
-                        return [];
-                    }
-
-                    // Create personnel object with safe defaults
-                    return {
-                        Title: String(item.Title || ''),
-                        FirstName: String(item.FirstName || ''),
-                        LastName: String(item.LastName || ''),
-                        PreferredFirstName: String(item.PreferredFirstName || ''),
-                        Email: String(item.Email || ''),
-                        ProfilePicture: (item.ProfilePicture && item.ProfilePicture.Url) ? 
-                            item.ProfilePicture.Url : '_layouts/15/userphoto.aspx?size=M',
-                        PrimaryAreaIDs: getAreaIds(item.PrimaryAreaIDs),
-                        SecondaryAreaIDs: getAreaIds(item.SecondaryAreaIDs),
-                        Manager: item.Manager || null,
-                        JobTitle: String(item.JobTitle || '')
-                    };
-                }).filter(Boolean); // Remove any null items
-            }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Data injected by Power Automate
-            var rawData = @{body('Get_items')?['value']};
-            
-            // Format the data
-            personnelData = rawData.map(function(item) {
-                return {
-                    Title: item.Title || '',
-                    FirstName: item.FirstName || '',
-                    LastName: item.LastName || '',
-                    PreferredFirstName: item.PreferredFirstName || item.FirstName || '',
-                    Email: item.UserEmail || '',
-                    ProfilePicture: item.UserEmail ? 
-                        `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.UserEmail)}` :
-                        '_layouts/15/userphoto.aspx?size=M',
-                    Department: item.UserDepartment || '',
-                    JobTitle: item.UserJobTitle || '',
-                    PrimaryAreaIDs: Array.isArray(item.PrimaryAreaIDs) ? item.PrimaryAreaIDs :
-                                   (item.PrimaryAreaIDs?.results || []),
-                    SecondaryAreaIDs: Array.isArray(item.SecondaryAreaIDs) ? item.SecondaryAreaIDs :
-                                     (item.SecondaryAreaIDs?.results || []),
-                    Manager: item.ManagerDisplayName ? {
-                        DisplayName: item.ManagerDisplayName,
-                        Email: item.ManagerEmail || '',
-                        Department: item.ManagerDepartment || '',
-                        JobTitle: item.ManagerJobTitle || ''
-                    } : null
-                };
-            });
+            // Initialize analytics tracking
+            analytics.init();
             
             initializeMap();
             setupEventListeners();
+            
+            // Load CSV data if no SharePoint data is present
+            if (!personnelData || personnelData.length === 0) {
+                loadCSVData();
+            } else {
+                // Perform initial query with existing data
+                performQuery();
+            }
         });
 
         // Initialize map and event handlers
@@ -462,14 +700,167 @@
                     return;
                 }
 
+                console.log('SVG loaded successfully');
+
+                // Add styles to SVG
+                const style = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'style');
+                style.textContent = `
+                    path {
+                        cursor: pointer;
+                        transition: all 0.3s ease !important;
+                        opacity: 0.7 !important;
+                    }
+                    path:hover, path.hover {
+                        opacity: 0.9 !important;
+                        filter: brightness(1.3) saturate(1.2) !important;
+                        transform: scale(1.02) !important;
+                        transform-origin: center !important;
+                    }
+                    path.selected {
+                        opacity: 1 !important;
+                        filter: brightness(1.4) saturate(1.5) !important;
+                        stroke: #0078d4 !important;
+                        stroke-width: 2px !important;
+                        transform: scale(1.05) !important;
+                        transform-origin: center !important;
+                    }
+                `;
+                svgDoc.querySelector('svg').appendChild(style);
+
                 // Add click handlers to all paths
                 const paths = svgDoc.querySelectorAll('path');
-                paths.forEach(path => {
+                console.log(`Found ${paths.length} paths in SVG`);
+                
+                paths.forEach((path, index) => {
+                    const pathId = path.getAttribute('id');
+                    console.log(`Attaching events to path ${index}: ${pathId}`);
+                    
                     path.addEventListener('click', handleAreaClick);
                     path.addEventListener('mouseenter', handleAreaHover);
                     path.addEventListener('mouseleave', handleAreaLeave);
+                    
+                    // Test hover effect immediately
+                    path.style.transition = 'all 0.3s ease';
                 });
+                
+                console.log('Event handlers attached to all paths');
             });
+        }
+
+        // Handle area click
+        function handleAreaClick(event) {
+            const path = event.target;
+            const pathId = path.getAttribute('id');
+            if (!pathId) return;
+            
+            // Clear previous selections
+            const svgDoc = path.ownerDocument;
+            svgDoc.querySelectorAll('path.selected').forEach(p => {
+                p.classList.remove('selected');
+                // Reset to default style
+                p.style.opacity = '0.7';
+                p.style.filter = '';
+                p.style.transform = '';
+                p.style.stroke = '';
+                p.style.strokeWidth = '';
+            });
+            
+            // Select this path
+            path.classList.add('selected');
+            path.style.opacity = '1';
+            path.style.filter = 'brightness(1.4) saturate(1.5)';
+            path.style.transform = 'scale(1.05)';
+            path.style.transformOrigin = 'center';
+            path.style.stroke = '#0078d4';
+            path.style.strokeWidth = '2px';
+            
+            // Extract region and area from path ID
+            // Path IDs are like "C06_Seattle", "B06_Nashville", "A01_Baltimore"
+            const parts = pathId.split('_');
+            if (parts.length < 2) return;
+            
+            const areaCode = parts[0]; // e.g., "C06"
+            const regionCode = areaCode.charAt(0); // e.g., "C"
+            const areaNameFromId = parts[1]; // e.g., "Seattle"
+            
+            // Map to region names
+            const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
+            const region = regionMap[regionCode];
+            
+            // Get the area name from our mapping
+            const areaName = areaNames[areaCode];
+            if (!areaName) {
+                // Fallback: extract from path ID and format it
+                const rawName = parts[1].replace(/_/g, ' ');
+                console.log('Area not found in mapping:', areaCode, 'Using:', rawName);
+            }
+            
+            console.log('Area clicked:', { pathId, areaCode, areaName, region });
+            
+            // Track click analytics
+            if (areaName) {
+                analytics.trackClick(areaCode, areaName);
+            }
+            
+            // Update dropdowns
+            document.getElementById('region-select').value = region;
+            updateAreaDropdown(region);
+            
+            setTimeout(() => {
+                if (areaName) {
+                    document.getElementById('area-select').value = areaName;
+                    performQuery();
+                }
+            }, 100);
+        }
+        
+        // Handle area hover
+        function handleAreaHover(event) {
+            const path = event.target;
+            console.log('Hover detected on:', path.getAttribute('id'));
+            
+            // Add visual hover effect with immediate styling
+            path.classList.add('hover');
+            
+            // Force immediate style update to ensure hover effect is visible
+            path.style.opacity = '0.9';
+            path.style.filter = 'brightness(1.3) saturate(1.2)';
+            path.style.transform = 'scale(1.02)';
+            path.style.transformOrigin = 'center';
+            path.style.transition = 'all 0.3s ease';
+            
+            // Track hover analytics
+            const pathId = path.getAttribute('id');
+            if (pathId) {
+                const parts = pathId.split('_');
+                if (parts.length >= 2) {
+                    const areaCode = parts[0];
+                    const areaName = areaNames[areaCode];
+                    if (areaName) {
+                        analytics.trackHover(areaCode, areaName);
+                        console.log(`Hover tracked: ${areaName} (${areaCode})`);
+                    } else {
+                        console.log(`Area name not found for code: ${areaCode}`);
+                    }
+                }
+            }
+        }
+        
+        // Handle area leave
+        function handleAreaLeave(event) {
+            const path = event.target;
+            console.log('Mouse left:', path.getAttribute('id'));
+            
+            // Remove hover class
+            path.classList.remove('hover');
+            
+            // Reset styles only if not selected
+            if (!path.classList.contains('selected')) {
+                path.style.opacity = '0.7';
+                path.style.filter = '';
+                path.style.transform = '';
+                path.style.transformOrigin = '';
+            }
         }
 
         // Set up event listeners
@@ -489,55 +880,13 @@
             areaSelect.addEventListener('change', function() {
                 // Auto-perform query when area changes
                 performQuery();
-                    }
-                });
+            });
+            
+            // Query button handler
+            document.getElementById('query-button').addEventListener('click', performQuery);
 
-                // Construct profile picture URL
-                const profilePicUrl = item.UserEmail ? 
-                    `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.UserEmail)}` : 
-                    '_layouts/15/userphoto.aspx?size=M';
-                        PreferredFirstName: item.PreferredFirstName || firstName || '',
-                        Email: userEmail || 'No email provided',
-                        ProfilePicture: profilePicUrl,
-                        Department: item.UserDepartment || 'Department not specified',
-                        JobTitle: item.UserJobTitle || 'Role not specified',
-                    PrimaryAreaIDs: Array.isArray(item.PrimaryAreaIDs) ? item.PrimaryAreaIDs : 
-                                   (item.PrimaryAreaIDs?.results || []),
-                        SecondaryAreaIDs: Array.isArray(item.SecondaryAreaIDs) ? item.SecondaryAreaIDs : 
-                                         (item.SecondaryAreaIDs?.results || []),
-                        Manager: item.ManagerDisplayName ? {
-                            DisplayName: item.ManagerDisplayName,
-                            Email: item.ManagerEmail || '',
-                            Picture: item.ManagerPicture || 
-                                    (item.ManagerEmail ? `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(item.ManagerEmail)}` : 
-                                    '_layouts/15/userphoto.aspx?size=M'),
-                            Department: item.ManagerDepartment || 'Department not specified',
-                            JobTitle: item.ManagerJobTitle || 'Role not specified'
-                        } : null,
-                        JobTitle: item.JobTitle || 'Role not specified'
-                    };
-                } catch (error) {
-                    console.error('Error processing personnel item:', error, item);
-                    return {
-                        Title: 'Error Processing Item',
-                        FirstName: '',
-                        LastName: '',
-                        PreferredFirstName: '',
-                        Email: '',
-                        ProfilePicture: '_layouts/15/userphoto.aspx?size=M',
-                        Department: '',
-                        JobTitle: '',
-                        PrimaryAreaIDs: [],
-                        SecondaryAreaIDs: [],
-                        Manager: null,
-                        Error: true
-                    };
-                }
-            });
-            })
-            .catch(error => {
-                console.error('Error loading personnel data:', error);
-            });
+            // Reset button handler  
+            document.getElementById('reset-button').addEventListener('click', resetQuery);
         }
 
         // Update area dropdown based on selected region
@@ -548,31 +897,26 @@
 
             if (!region) return;
 
-            const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
-            if (!svgDoc) return;
-
-            const regionGroup = svgDoc.querySelector(`#${region}`);
-            if (!regionGroup) return;
-
-            const paths = regionGroup.querySelectorAll('path');
-            const areas = Array.from(paths).map(path => {
-                const pathId = path.getAttribute('id');
-                if (!pathId) return null;
-
-                const parts = pathId.split('_');
-                if (parts.length < 2) return null;
-
-                return {
-                    id: pathId,
-                    name: parts[1].replace(/([A-Z])/g, ' $1').trim()
-                };
-            }).filter(area => area !== null);
-
-            areas.sort((a, b) => a.name.localeCompare(b.name));
-            areas.forEach(area => {
+            // Get areas for this region from our mapping
+            const regionPrefix = region === 'East' ? 'A' : (region === 'Central' ? 'B' : 'C');
+            const areas = [];
+            
+            // Collect unique area names for this region
+            const areaSet = new Set();
+            for (const [code, name] of Object.entries(areaNames)) {
+                if (code.startsWith(regionPrefix)) {
+                    areaSet.add(name);
+                }
+            }
+            
+            // Convert to array and sort
+            const sortedAreas = Array.from(areaSet).sort();
+            
+            // Add options to dropdown
+            sortedAreas.forEach(areaName => {
                 const option = document.createElement('option');
-                option.value = area.name;
-                option.textContent = area.name;
+                option.value = areaName;
+                option.textContent = areaName;
                 areaSelect.appendChild(option);
             });
         }
@@ -582,6 +926,9 @@
             const region = document.getElementById('region-select').value;
             const area = document.getElementById('area-select').value;
             const coverageType = document.querySelector('input[name="coverage-type"]:checked')?.value || 'all';
+
+            // Track query analytics
+            analytics.trackQuery(region, area, coverageType);
 
             clearAllHighlights();
 
@@ -605,7 +952,10 @@
             document.querySelector('input[name="coverage-type"][value="all"]').checked = true;
 
             clearAllHighlights();
-            document.querySelector('.results-container').style.display = 'none';
+            
+            // Reset results to default message
+            document.getElementById('results-summary').textContent = 'Click on an area or use the search controls above to view personnel';
+            document.getElementById('results-list').innerHTML = '';
         }
 
         // Clear all highlights from the map
@@ -617,6 +967,14 @@
             paths.forEach(path => {
                 path.classList.remove('selected');
                 path.classList.remove('hover');
+                
+                // Reset to default styles
+                path.style.opacity = '0.7';
+                path.style.filter = '';
+                path.style.transform = '';
+                path.style.transformOrigin = '';
+                path.style.stroke = '';
+                path.style.strokeWidth = '';
             });
         }
 
@@ -639,20 +997,22 @@
             const svgDoc = document.querySelector('object[data="Artboard 1.svg"]').contentDocument;
             if (!svgDoc) return;
 
-            const regionGroup = svgDoc.querySelector(`#${region}`);
-            if (!regionGroup) return;
-
-            const formattedAreaName = area.replace(/\s+/g, '');
-            const paths = regionGroup.querySelectorAll('path');
+            // Find all paths in the SVG
+            const paths = svgDoc.querySelectorAll('path');
             
+            // Look for the path that matches this area
             for (const path of paths) {
                 const pathId = path.getAttribute('id');
                 if (!pathId) continue;
 
-                const nameParts = pathId.split('_');
-                if (nameParts.length < 2) continue;
-
-                if (nameParts[1].toLowerCase() === formattedAreaName.toLowerCase()) {
+                // Extract area code from path ID
+                const parts = pathId.split('_');
+                if (parts.length < 2) continue;
+                
+                const areaCode = parts[0];
+                
+                // Check if this area code maps to our selected area name
+                if (areaNames[areaCode] === area) {
                     path.classList.add('selected');
                     break;
                 }
@@ -665,7 +1025,6 @@
             const resultsSummary = document.getElementById('results-summary');
             const resultsList = document.getElementById('results-list');
 
-            resultsContainer.style.display = 'block';
             resultsList.innerHTML = '';
 
             // Get matching personnel
@@ -689,9 +1048,12 @@
             resultsSummary.textContent = summaryText;
 
             // Display each person
-            matchingPersonnel.forEach(person => {
-                const li = document.createElement('li');
-                li.className = 'personnel-item';
+            if (matchingPersonnel.length > 0) {
+                matchingPersonnel.forEach(person => {
+                    const listItem = document.createElement('li');
+                    
+                    const profileContainer = document.createElement('div');
+                    profileContainer.className = 'profile-container';
 
                     if (coverageType === 'all') {
                         const coverageBadge = document.createElement('div');
@@ -702,8 +1064,11 @@
 
                     const profileImg = document.createElement('img');
                     profileImg.className = 'profile-image';
-                    profileImg.src = person.ProfilePicture || '_layouts/15/userphoto.aspx?size=M';
+                    profileImg.src = person.ProfilePicture || 
+                        (person.UserEmail ? `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(person.UserEmail)}` :
+                        'https://via.placeholder.com/50');
                     profileImg.alt = 'Profile';
+                    profileImg.onerror = function() { this.src = 'https://via.placeholder.com/50'; };
                     profileContainer.appendChild(profileImg);
 
                     const userDetails = document.createElement('div');
@@ -717,26 +1082,30 @@
 
                     const emailElement = document.createElement('div');
                     emailElement.className = 'person-email';
-                    emailElement.textContent = person.Email;
+                    emailElement.textContent = person.UserEmail || person.Email || '';
                     userDetails.appendChild(emailElement);
 
-                    if (person.JobTitle) {
+                    if (person.UserJobTitle || person.JobTitle) {
                         const jobElement = document.createElement('div');
                         jobElement.className = 'person-job';
-                        jobElement.textContent = person.JobTitle;
+                        jobElement.textContent = person.UserJobTitle || person.JobTitle || '';
                         userDetails.appendChild(jobElement);
                         if (person.Manager && person.Manager.DisplayName) {
                             const managerContainer = document.createElement('div');
                             managerContainer.className = 'person-manager';
                             
                             // Create manager info with picture
+                            const managerPicture = person.Manager.Picture || 
+                                (person.Manager.Email ? `/_layouts/15/userphoto.aspx?size=M&accountname=${encodeURIComponent(person.Manager.Email)}` :
+                                'https://via.placeholder.com/32');
+                            
                             const managerContent = `
                                 <div class="manager-info">
-                                    <img src="${person.Manager.Picture}" class="manager-picture" alt="Manager Picture">
+                                    <img src="${managerPicture}" class="manager-picture" alt="Manager Picture" onerror="this.src='https://via.placeholder.com/32'">
                                     <div class="manager-details">
                                         <div class="manager-name">${person.Manager.DisplayName}</div>
-                                        <div class="manager-title">${person.Manager.JobTitle}</div>
-                                        <div class="manager-email">${person.Manager.Email}</div>
+                                        <div class="manager-title">${person.Manager.JobTitle || ''}</div>
+                                        <div class="manager-email">${person.Manager.Email || ''}</div>
                                     </div>
                                 </div>
                             `;
@@ -776,8 +1145,6 @@
                 listItem.innerHTML = '<em>No personnel found matching the selected criteria</em>';
                 resultsList.appendChild(listItem);
             }
-
-            resultsContainer.style.display = 'block';
         }
 
         // Find matching personnel
@@ -802,26 +1169,55 @@
 
                 console.log('Checking person:', person.Title, { primaryAreas, secondaryAreas });
 
-                let isPrimary = false;
-                let isSecondary = false;
+                let matchesPrimary = false;
+                let matchesSecondary = false;
 
-                // Check if person matches the area criteria
+                // Get region prefix
+                const regionPrefix = region === 'East' ? 'A' : (region === 'Central' ? 'B' : 'C');
+
                 if (area) {
-                    isPrimary = primaryAreas.includes(area);
-                    isSecondary = secondaryAreas.includes(area);
+                    // Find the area ID that matches this area name
+                    let areaId = null;
+                    for (const [id, name] of Object.entries(areaNames)) {
+                        if (id.startsWith(regionPrefix) && name.toLowerCase() === area.toLowerCase()) {
+                            areaId = id;
+                            break;
+                        }
+                    }
+                    
+                    if (areaId) {
+                        matchesPrimary = primaryAreas.includes(areaId);
+                        matchesSecondary = secondaryAreas.includes(areaId);
+                    }
                 } else {
                     // If no specific area, check if person has any areas in the region
-                    isPrimary = primaryAreas.some(areaId => areaId.startsWith(region[0]));
-                    isSecondary = secondaryAreas.some(areaId => areaId.startsWith(region[0]));
+                    matchesPrimary = primaryAreas.some(areaId => areaId.startsWith(regionPrefix));
+                    matchesSecondary = secondaryAreas.some(areaId => areaId.startsWith(regionPrefix));
                 }
 
                 // Add person to results based on coverage type
-                if ((coverageType === 'all' && (isPrimary || isSecondary)) ||
-                    (coverageType === 'primary' && isPrimary) ||
-                    (coverageType === 'secondary' && isSecondary)) {
+                if (coverageType === 'all') {
+                    if (matchesPrimary) {
+                        results.push({
+                            ...person,
+                            coverageType: 'primary'
+                        });
+                    }
+                    if (matchesSecondary) {
+                        results.push({
+                            ...person,
+                            coverageType: 'secondary'
+                        });
+                    }
+                } else if (coverageType === 'primary' && matchesPrimary) {
                     results.push({
                         ...person,
-                        coverageType: isPrimary ? 'primary' : 'secondary'
+                        coverageType: 'primary'
+                    });
+                } else if (coverageType === 'secondary' && matchesSecondary) {
+                    results.push({
+                        ...person,
+                        coverageType: 'secondary'
                     });
                 }
             });
@@ -834,13 +1230,12 @@
         function formatAreasList(areaIDs) {
             if (!Array.isArray(areaIDs) || areaIDs.length === 0) return '';
 
-            const areaNames = areaIDs.map(areaId => {
-                const parts = areaId.split('_');
-                if (parts.length < 2) return '';
-                return parts[1].replace(/([A-Z])/g, ' $1').trim();
+            const formattedNames = areaIDs.map(areaId => {
+                // Use the areaNames mapping
+                return areaNames[areaId] || areaId;
             }).filter(name => name !== '');
 
-            return areaNames.join(', ');
+            return formattedNames.join(', ');
         }
 
         // Get region prefix letter
@@ -853,34 +1248,6 @@
             }
         }
 
-        // Handle area click events
-        function handleAreaClick(event) {
-            const path = event.target;
-            const pathId = path.getAttribute('id');
-            if (!pathId) return;
-
-            const parts = pathId.split('_');
-            if (parts.length < 2) return;
-
-            const regionPrefix = parts[0][0];
-            const region = getRegionName(regionPrefix);
-            const areaName = parts[1].replace(/([A-Z])/g, ' $1').trim();
-
-            document.getElementById('region-select').value = region;
-            updateAreaDropdown(region);
-            document.getElementById('area-select').value = areaName;
-            performQuery();
-        }
-
-        // Handle area hover events
-        function handleAreaHover(event) {
-            event.target.classList.add('hover');
-        }
-
-        // Handle area leave events
-        function handleAreaLeave(event) {
-            event.target.classList.remove('hover');
-        }
 
         // Get region name from prefix
         function getRegionName(prefix) {
@@ -890,6 +1257,93 @@
                 case 'C': return 'West';
                 default: return '';
             }
+        }
+        
+        // Analytics event handlers - Add after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Analytics button handlers
+            document.getElementById('analytics-button').addEventListener('click', showAnalyticsPanel);
+            document.getElementById('close-analytics').addEventListener('click', hideAnalyticsPanel);
+            document.getElementById('export-analytics').addEventListener('click', function() {
+                analytics.exportData();
+            });
+            document.getElementById('view-analytics').addEventListener('click', showAnalyticsDetails);
+            document.getElementById('clear-analytics').addEventListener('click', function() {
+                analytics.clearData();
+                updateAnalyticsSummary();
+            });
+        });
+        
+        // Show analytics panel
+        function showAnalyticsPanel() {
+            document.getElementById('analytics-panel').style.display = 'block';
+            updateAnalyticsSummary();
+        }
+        
+        // Hide analytics panel
+        function hideAnalyticsPanel() {
+            document.getElementById('analytics-panel').style.display = 'none';
+        }
+        
+        // Update analytics summary display
+        function updateAnalyticsSummary() {
+            const summary = analytics.getSummary();
+            const summaryDiv = document.getElementById('analytics-summary');
+            
+            summaryDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalHovers}</div>
+                        <div style="font-size: 12px; color: #666;">Total Hovers</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalClicks}</div>
+                        <div style="font-size: 12px; color: #666;">Total Clicks</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f0f6fc; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${summary.interactions.totalQueries}</div>
+                        <div style="font-size: 12px; color: #666;">Total Queries</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Most Popular Areas (Clicks):</strong><br>
+                    ${summary.interactions.mostClickedAreas.slice(0, 3).map(area => 
+                        `• ${area.area}: ${area.count} clicks`
+                    ).join('<br>') || 'No data yet'}
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    Session: ${summary.sessionInfo.sessionId}<br>
+                    Total Sessions Recorded: ${summary.sessionInfo.totalSessions}
+                </div>
+            `;
+        }
+        
+        // Show detailed analytics in console and alert
+        function showAnalyticsDetails() {
+            const summary = analytics.getSummary();
+            console.log('Detailed Analytics:', summary);
+            
+            alert(`Detailed Analytics:
+            
+Session Info:
+• Session ID: ${summary.sessionInfo.sessionId}
+• Total Sessions: ${summary.sessionInfo.totalSessions}
+
+Interactions:
+• Total Hovers: ${summary.interactions.totalHovers}
+• Total Clicks: ${summary.interactions.totalClicks}
+• Total Queries: ${summary.interactions.totalQueries}
+
+Most Clicked Areas:
+${summary.interactions.mostClickedAreas.map(area => `• ${area.area}: ${area.count}`).join('\n')}
+
+Popular Regions:
+${Object.entries(summary.interactions.popularRegions).map(([region, count]) => `• ${region}: ${count}`).join('\n')}
+
+Coverage Preferences:
+${Object.entries(summary.interactions.coverageTypePreferences).map(([type, count]) => `• ${type}: ${count}`).join('\n')}
+
+See browser console for full data.`);
         }
     </script>
 </body>
