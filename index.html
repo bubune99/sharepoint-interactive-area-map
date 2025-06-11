@@ -1556,21 +1556,31 @@
                 const regionPrefix = region === 'East' ? 'A' : (region === 'Central' ? 'B' : 'C');
 
                 if (area) {
-                    // Find the area ID that matches this area name (SVG format)
-                    let areaId = null;
+                    // Find all area IDs that match this area name (both formats)
+                    let matchingAreaIds = [];
                     for (const [id, name] of Object.entries(areaNames)) {
                         if (id.startsWith(regionPrefix) && name.toLowerCase() === area.toLowerCase()) {
-                            areaId = id;
-                            break;
+                            matchingAreaIds.push(id);
+                            // Also check for alternate format (A01 vs A1)
+                            if (id.length === 3) {
+                                // If it's A01 format, also check for A1
+                                const shortFormat = id.replace(/^([A-C])0/, '$1');
+                                if (shortFormat !== id) matchingAreaIds.push(shortFormat);
+                            } else if (id.length === 2) {
+                                // If it's A1 format, also check for A01
+                                const longFormat = id.replace(/^([A-C])/, '$10');
+                                if (longFormat !== id) matchingAreaIds.push(longFormat);
+                            }
                         }
                     }
                     
-                    console.log('Looking for area:', area, 'SVG format:', areaId);
+                    console.log('Looking for area:', area, 'Possible IDs:', matchingAreaIds);
                     
-                    if (areaId) {
-                        matchesPrimary = primaryAreas.includes(areaId);
-                        matchesSecondary = secondaryAreas.includes(areaId);
-                        console.log('Matches for', person.Title, ':', { areaId, matchesPrimary, matchesSecondary, primaryAreas, secondaryAreas });
+                    if (matchingAreaIds.length > 0) {
+                        // Check if any of the possible IDs match
+                        matchesPrimary = primaryAreas.some(areaId => matchingAreaIds.includes(areaId));
+                        matchesSecondary = secondaryAreas.some(areaId => matchingAreaIds.includes(areaId));
+                        console.log('Matches for', person.Title, ':', { matchingAreaIds, matchesPrimary, matchesSecondary, primaryAreas, secondaryAreas });
                     } else {
                         // Fallback: if no exact area match, check for any area in the same region
                         console.log('No exact area match, checking region fallback');
