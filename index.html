@@ -228,29 +228,31 @@
             color: #333;
             margin-left: 10px;
         }
-        /* Modal styles */
+        /* Side Modal styles */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-container {
+            top: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: calc(100vh - 40px);
             background: white;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 90%;
-            max-height: 80vh;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            border: 1px solid #e0e0e0;
+        }
+        .modal-overlay.show {
+            transform: translateX(0);
+        }
+        .modal-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         .modal-header {
             padding: 20px;
@@ -323,9 +325,10 @@
                 flex-direction: column;
                 gap: 10px;
             }
-            .modal-container {
+            .modal-overlay {
                 width: 95%;
-                max-height: 90vh;
+                right: 10px;
+                max-height: calc(100vh - 20px);
             }
             .modal-header {
                 padding: 15px;
@@ -387,7 +390,9 @@
             <div class="control-group">
                 <button id="query-button" class="control-button">Search</button>
                 <button id="reset-button" class="control-button button-secondary">Reset</button>
+                <button id="show-all-button" class="control-button button-secondary" style="margin-left: 10px;">👥 Show All</button>
                 <button id="analytics-button" class="control-button button-secondary" style="margin-left: 10px;">📊 Analytics</button>
+                <button id="test-modal-button" class="control-button button-secondary" style="margin-left: 10px;">🧪 Test Modal</button>
             </div>
         </div>
         
@@ -583,55 +588,36 @@
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         
-        // Area name mapping based on actual SVG path IDs
+        // Area name mapping - maps SVG area codes to readable names
+        // Note: CSV data uses format A1, A2, etc. SVG uses A01, A02, etc.
         var areaNames = {
-            // CSV compatibility (legacy format)
-            'A1': 'Baltimore Coast',
-            'A2': 'South East', 
-            'A3': 'New England',
-            'A4': 'New York',
-            'A5': 'Philadelphia',
-            'A6': 'Gulf Coast',
-            'A7': 'Florida',
-            'B1': 'Chicago',
-            'B2': 'Michigan',
-            'B3': 'Ohio Valley',
-            'B4': 'Central Plains',
-            'B5': 'North Central',
-            'B6': 'Nashville',
-            'B7': 'St. Louis',
-            'B8': 'Tulsa',
-            'C1': 'Denver',
-            'C2': 'Dallas',
-            'C3': 'Houston',
-            'C4': 'Phoenix',
-            'C5': 'Northern California',
-            'C6': 'Seattle',
-            'C7': 'Los Angeles',
+            // East Region (A)
+            'A1': 'Baltimore Coast', 'A01': 'Baltimore Coast',
+            'A2': 'South East', 'A02': 'South East',
+            'A3': 'New England', 'A03': 'New England', 
+            'A4': 'New York', 'A04': 'New York',
+            'A5': 'Philadelphia', 'A05': 'Philadelphia',
+            'A6': 'Gulf Coast', 'A06': 'Gulf Coast',
+            'A7': 'Florida', 'A07': 'Florida',
             
-            // SVG path IDs (actual format used in Artboard 1.svg)
-            'A01': 'Baltimore Coast',
-            'A02': 'South East',
-            'A03': 'New England', 
-            'A04': 'New York',
-            'A05': 'Philadelphia',
-            'A06': 'Gulf Coast',
-            'A07': 'Florida',
-            'B01': 'Chicago',
-            'B02': 'Michigan',
-            'B03': 'Ohio Valley',
-            'B04': 'Central Plains',
-            'B05': 'North Central',
-            'B06': 'Nashville',
-            'B07': 'St. Louis',
-            'B08': 'Tulsa',
-            'C01': 'Denver',
-            'C02': 'Dallas',
-            'C03': 'Houston',
-            'C04': 'Phoenix',
-            'C05': 'Northern California',
-            'C06': 'Seattle',
-            'C07': 'Los Angeles'
+            // Central Region (B) 
+            'B1': 'Chicago', 'B01': 'Chicago',
+            'B2': 'Michigan', 'B02': 'Michigan',
+            'B3': 'Ohio Valley', 'B03': 'Ohio Valley',
+            'B4': 'Central Plains', 'B04': 'Central Plains',
+            'B5': 'North Central', 'B05': 'North Central',
+            'B6': 'Nashville', 'B06': 'Nashville',
+            'B7': 'St. Louis', 'B07': 'St. Louis',
+            'B8': 'Tulsa', 'B08': 'Tulsa',
+            
+            // West Region (C)
+            'C1': 'Denver', 'C01': 'Denver',
+            'C2': 'Dallas', 'C02': 'Dallas',
+            'C3': 'Houston', 'C03': 'Houston',
+            'C4': 'Phoenix', 'C04': 'Phoenix',
+            'C5': 'Northern California', 'C05': 'Northern California',
+            'C6': 'Seattle', 'C06': 'Seattle',
+            'C7': 'Los Angeles', 'C07': 'Los Angeles'
         };
         
         // Load CSV data if available
@@ -656,8 +642,8 @@
                     console.log('Loaded personnel data from CSV:', personnelData);
                 }
                 
-                // Perform initial query to show all personnel
-                performQuery();
+                // Don't auto-perform query - wait for user interaction
+                console.log('CSV data loaded, ready for user queries');
             } catch (error) {
                 console.warn('CSV loading failed, using embedded test data:', error.message);
                 // Use embedded test data if no CSV and no SharePoint data
@@ -672,8 +658,8 @@
                             "PreferredFirstName": "Johnny",
                             "UserDepartment": "Sales",
                             "UserJobTitle": "Sales Engineer",
-                            "PrimaryAreaIDs": ["A1", "A2"],
-                            "SecondaryAreaIDs": ["B1"],
+                            "PrimaryAreaIDs": ["A01", "A02"],
+                            "SecondaryAreaIDs": ["B01"],
                             "ManagerDisplayName": "Jane Manager",
                             "ManagerEmail": "jane.manager@company.com",
                             "ManagerDepartment": "Sales",
@@ -687,7 +673,7 @@
                             "LastName": "Manager",
                             "UserDepartment": "Sales",
                             "UserJobTitle": "Regional Manager",
-                            "PrimaryAreaIDs": ["B1", "B2", "B3"],
+                            "PrimaryAreaIDs": ["B01", "B02", "B03"],
                             "SecondaryAreaIDs": [],
                             "ManagerDisplayName": "Tom Director",
                             "ManagerEmail": "tom.director@company.com",
@@ -703,8 +689,8 @@
                             "PreferredFirstName": "Bob",
                             "UserDepartment": "Technical",
                             "UserJobTitle": "Support Engineer",
-                            "PrimaryAreaIDs": ["C1"],
-                            "SecondaryAreaIDs": ["A3", "A4"],
+                            "PrimaryAreaIDs": ["C06"],
+                            "SecondaryAreaIDs": ["A03", "A04"],
                             "ManagerDisplayName": "Jane Manager",
                             "ManagerEmail": "jane.manager@company.com",
                             "ManagerDepartment": "Sales",
@@ -718,8 +704,8 @@
                             "LastName": "Lee",
                             "UserDepartment": "Marketing",
                             "UserJobTitle": "Marketing Specialist",
-                            "PrimaryAreaIDs": ["A2", "A3"],
-                            "SecondaryAreaIDs": ["B2", "B3"],
+                            "PrimaryAreaIDs": ["A02", "A03"],
+                            "SecondaryAreaIDs": ["B02", "B03"],
                             "ManagerDisplayName": "Tom Director",
                             "ManagerEmail": "tom.director@company.com",
                             "ManagerDepartment": "Executive",
@@ -734,12 +720,27 @@
                             "PreferredFirstName": "Tom",
                             "UserDepartment": "Executive",
                             "UserJobTitle": "Sales Director",
-                            "PrimaryAreaIDs": ["A1", "B1", "C1"],
+                            "PrimaryAreaIDs": ["A01", "B01", "C06"],
                             "SecondaryAreaIDs": []
+                        },
+                        {
+                            "Title": "Mike Johnson",
+                            "UserEmail": "mike.johnson@company.com",
+                            "UserDisplayName": "Mike Johnson",
+                            "FirstName": "Mike",
+                            "LastName": "Johnson",
+                            "UserDepartment": "Technical",
+                            "UserJobTitle": "Field Engineer",
+                            "PrimaryAreaIDs": ["C03", "C07"],
+                            "SecondaryAreaIDs": ["A06"],
+                            "ManagerDisplayName": "Jane Manager",
+                            "ManagerEmail": "jane.manager@company.com",
+                            "ManagerDepartment": "Sales",
+                            "ManagerJobTitle": "Regional Manager"
                         }
                     ];
                 }
-                performQuery();
+                console.log('Test data loaded, ready for user queries');
             }
         }
         
@@ -803,8 +804,8 @@
             if (!personnelData || personnelData.length === 0) {
                 loadCSVData();
             } else {
-                // Perform initial query with existing data
-                performQuery();
+                // Data is already loaded, ready for user queries
+                console.log('SharePoint data already loaded, ready for user queries');
             }
         });
 
@@ -1050,7 +1051,7 @@
                         "ManagerJobTitle": "Regional Manager"
                     }
                 ];
-                performQuery();
+                console.log('Fallback data loaded for file protocol demo');
             }
         }
         
@@ -1201,7 +1202,7 @@
             const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
             const region = regionMap[regionCode];
             
-            // Get the area name from our mapping
+            // Get the area name from our mapping (data should already be in SVG format)
             const areaName = areaNames[areaCode];
             if (!areaName) {
                 // Fallback: extract from path ID and format it
@@ -1272,14 +1273,19 @@
             regionSelect.addEventListener('change', function(event) {
                 const region = event.target.value;
                 updateAreaDropdown(region);
-                // Auto-perform query when region changes
-                performQuery();
+                // Only auto-perform query if region is selected (not empty)
+                if (region) {
+                    performQuery();
+                }
             });
 
             // Area select change handler
             areaSelect.addEventListener('change', function() {
-                // Auto-perform query when area changes
-                performQuery();
+                // Only auto-perform query if area is selected (not empty)
+                const area = this.value;
+                if (area) {
+                    performQuery();
+                }
             });
             
             // Query button handler
@@ -1346,14 +1352,21 @@
 
         // Reset the query form and clear highlights
         function resetQuery() {
+            console.log('🔄 Reset button clicked');
+            
+            // Reset form controls
             document.getElementById('region-select').value = '';
             document.getElementById('area-select').value = '';
             document.getElementById('area-select').disabled = true;
             document.querySelector('input[name="coverage-type"][value="all"]').checked = true;
 
+            // Clear map highlights
             clearAllHighlights();
             
-            // Reset results to default message
+            // Hide modal if open
+            hidePersonnelModal();
+            
+            // Reset results to default message (no modal)
             document.getElementById('results-summary').textContent = 'Click on an area or use the search controls above to view personnel';
             document.getElementById('results-list').innerHTML = '';
         }
@@ -1430,16 +1443,22 @@
 
         // Display query results
         function displayQueryResults(region, area, coverageType) {
-            console.log('Refreshing personnel data for:', { region, area, coverageType });
+            console.log('🔄 displayQueryResults called with:', { region, area, coverageType });
             
             // Clear existing results first to ensure fresh data
             const resultsSummary = document.getElementById('results-summary');
             const resultsList = document.getElementById('results-list');
+            
+            if (!resultsSummary || !resultsList) {
+                console.error('Results elements not found:', { resultsSummary, resultsList });
+                return;
+            }
+            
             resultsList.innerHTML = '';
 
             // Get fresh matching personnel data
             const matchingPersonnel = findMatchingPersonnel(region, area, coverageType);
-            console.log('Fresh matching personnel:', matchingPersonnel);
+            console.log('Fresh matching personnel count:', matchingPersonnel.length);
             
             // Create summary text
             let summaryText = '';
@@ -1462,38 +1481,63 @@
                 modalTitle = 'All Personnel';
             }
             
+            console.log('Modal will show:', { modalTitle, summaryText });
+            
             // Update the summary in the regular results area
             resultsSummary.textContent = summaryText;
 
-            // Show modal with the results
-            showPersonnelModal(modalTitle, summaryText, matchingPersonnel);
-
-            // Also update the regular results list for users who prefer scrolling
-            if (matchingPersonnel.length > 0) {
-                matchingPersonnel.forEach(person => {
-                    const listItem = document.createElement('li');
-                    const personCard = createPersonCard(person, false); // false for regular list format
-                    listItem.appendChild(personCard);
-                    resultsList.appendChild(listItem);
-                });
+            // Only show modal if there are personnel to display and it's an actual search/click
+            if (matchingPersonnel.length > 0 && (region || area)) {
+                console.log('📱 About to show modal...');
+                showPersonnelModal(modalTitle, summaryText, matchingPersonnel);
+            } else if (matchingPersonnel.length === 0 && (region || area)) {
+                // Show modal even for empty results if it's a specific search
+                console.log('📱 Showing modal for empty results...');
+                showPersonnelModal(modalTitle, summaryText, []);
             } else {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = '<em>No personnel found matching the selected criteria</em>';
-                resultsList.appendChild(listItem);
+                console.log('📱 No modal needed for general query');
             }
+
+            // Update the regular results list only when modal is NOT shown
+            if (!(region || area) || matchingPersonnel.length === 0) {
+                if (matchingPersonnel.length > 0) {
+                    matchingPersonnel.forEach(person => {
+                        const listItem = document.createElement('li');
+                        const personCard = createPersonCard(person, false); // false for regular list format
+                        listItem.appendChild(personCard);
+                        resultsList.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = '<em>No personnel found matching the selected criteria</em>';
+                    resultsList.appendChild(listItem);
+                }
+            }
+            
+            console.log('✅ displayQueryResults completed');
         }
 
         // Find matching personnel
         function findMatchingPersonnel(region, area, coverageType) {
             console.log('Finding personnel for:', { region, area, coverageType });
-            console.log('Available personnel:', personnelData);
+            console.log('Available personnel data:', {
+                isArray: Array.isArray(personnelData),
+                length: personnelData ? personnelData.length : 'null/undefined',
+                firstItem: personnelData && personnelData.length > 0 ? personnelData[0] : 'none'
+            });
 
-            // If no region selected, return all personnel
+            // If no region selected, return only personnel with area assignments
             if (!region) {
-                return personnelData.map(person => ({
+                const personnelWithAreas = personnelData.filter(person => {
+                    const hasPrimary = person.PrimaryAreaIDs && person.PrimaryAreaIDs.length > 0;
+                    const hasSecondary = person.SecondaryAreaIDs && person.SecondaryAreaIDs.length > 0;
+                    return hasPrimary || hasSecondary;
+                }).map(person => ({
                     ...person,
                     coverageType: 'all'
                 }));
+                console.log('Returning personnel with areas:', personnelWithAreas.length, 'items');
+                return personnelWithAreas;
             }
 
             const results = [];
@@ -1512,7 +1556,7 @@
                 const regionPrefix = region === 'East' ? 'A' : (region === 'Central' ? 'B' : 'C');
 
                 if (area) {
-                    // Find the area ID that matches this area name
+                    // Find the area ID that matches this area name (SVG format)
                     let areaId = null;
                     for (const [id, name] of Object.entries(areaNames)) {
                         if (id.startsWith(regionPrefix) && name.toLowerCase() === area.toLowerCase()) {
@@ -1521,9 +1565,18 @@
                         }
                     }
                     
+                    console.log('Looking for area:', area, 'SVG format:', areaId);
+                    
                     if (areaId) {
                         matchesPrimary = primaryAreas.includes(areaId);
                         matchesSecondary = secondaryAreas.includes(areaId);
+                        console.log('Matches for', person.Title, ':', { areaId, matchesPrimary, matchesSecondary, primaryAreas, secondaryAreas });
+                    } else {
+                        // Fallback: if no exact area match, check for any area in the same region
+                        console.log('No exact area match, checking region fallback');
+                        matchesPrimary = primaryAreas.some(areaId => areaId.startsWith(regionPrefix));
+                        matchesSecondary = secondaryAreas.some(areaId => areaId.startsWith(regionPrefix));
+                        console.log('Region fallback matches for', person.Title, ':', { regionPrefix, matchesPrimary, matchesSecondary });
                     }
                 } else {
                     // If no specific area, check if person has any areas in the region
@@ -1597,10 +1650,22 @@
         
         // Modal functions
         function showPersonnelModal(title, summary, personnelList) {
+            console.log('showPersonnelModal called with:', { title, summary, personnelCount: personnelList.length });
+            
             const modal = document.getElementById('personnel-modal');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return;
+            }
+            
             const modalTitle = document.getElementById('modal-title');
             const modalSummary = document.getElementById('modal-summary');
             const modalPersonnelList = document.getElementById('modal-personnel-list');
+            
+            if (!modalTitle || !modalSummary || !modalPersonnelList) {
+                console.error('Modal elements not found:', { modalTitle, modalSummary, modalPersonnelList });
+                return;
+            }
             
             // Set modal content
             modalTitle.textContent = title;
@@ -1608,9 +1673,11 @@
             
             // Clear and populate personnel list
             modalPersonnelList.innerHTML = '';
+            console.log('Modal content cleared, populating with personnel...');
             
             if (personnelList.length > 0) {
-                personnelList.forEach(person => {
+                personnelList.forEach((person, index) => {
+                    console.log(`Adding person ${index + 1}:`, person.Title || person.UserDisplayName);
                     const personCard = createPersonCard(person, true); // true for modal format
                     modalPersonnelList.appendChild(personCard);
                 });
@@ -1621,17 +1688,37 @@
                 modalPersonnelList.appendChild(emptyMessage);
             }
             
-            // Show modal
+            // Show modal with slide animation
+            console.log('Showing side modal...');
             modal.style.display = 'flex';
+            
+            // Force reflow then add show class for animation
+            modal.offsetHeight;
+            modal.classList.add('show');
             
             // Focus trap for accessibility
             const closeBtn = document.getElementById('modal-close');
-            closeBtn.focus();
+            if (closeBtn) {
+                closeBtn.focus();
+            }
         }
         
         function hidePersonnelModal() {
+            console.log('hidePersonnelModal called');
             const modal = document.getElementById('personnel-modal');
-            modal.style.display = 'none';
+            if (modal) {
+                // Slide out animation
+                modal.classList.remove('show');
+                
+                // Hide after animation completes
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+                
+                console.log('Modal sliding out');
+            } else {
+                console.error('Modal element not found when trying to hide');
+            }
         }
         
         // Create person card element (reusable for both list and modal)
@@ -1746,21 +1833,75 @@
             });
             
             // Modal event handlers
-            document.getElementById('modal-close').addEventListener('click', hidePersonnelModal);
-            document.getElementById('modal-close-footer').addEventListener('click', hidePersonnelModal);
+            const modalClose = document.getElementById('modal-close');
+            const modalCloseFooter = document.getElementById('modal-close-footer');
+            const personnelModal = document.getElementById('personnel-modal');
+            const testModalButton = document.getElementById('test-modal-button');
             
-            // Close modal when clicking overlay
-            document.getElementById('personnel-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
+            if (modalClose) {
+                modalClose.addEventListener('click', function(e) {
+                    console.log('Modal close button clicked');
                     hidePersonnelModal();
-                }
-            });
+                });
+            }
+            
+            if (modalCloseFooter) {
+                modalCloseFooter.addEventListener('click', function(e) {
+                    console.log('Modal footer close button clicked');
+                    hidePersonnelModal();
+                });
+            }
+            
+            // Test modal button
+            if (testModalButton) {
+                testModalButton.addEventListener('click', function() {
+                    console.log('🧪 Test modal button clicked');
+                    showPersonnelModal('Test Modal', 'This is a test of the modal system', [
+                        {
+                            Title: 'Test User',
+                            UserDisplayName: 'Test User',
+                            FirstName: 'Test',
+                            LastName: 'User',
+                            UserEmail: 'test@example.com',
+                            UserJobTitle: 'Test Engineer',
+                            PrimaryAreaIDs: ['A1'],
+                            SecondaryAreaIDs: []
+                        }
+                    ]);
+                });
+            }
+            
+            // Show All button
+            const showAllButton = document.getElementById('show-all-button');
+            if (showAllButton) {
+                showAllButton.addEventListener('click', function() {
+                    console.log('👥 Show All button clicked');
+                    console.log('Current personnelData:', personnelData);
+                    
+                    // Debug: Show all area IDs in the data
+                    const allAreaIds = new Set();
+                    personnelData.forEach(person => {
+                        if (person.PrimaryAreaIDs) {
+                            person.PrimaryAreaIDs.forEach(id => allAreaIds.add(id));
+                        }
+                        if (person.SecondaryAreaIDs) {
+                            person.SecondaryAreaIDs.forEach(id => allAreaIds.add(id));
+                        }
+                    });
+                    console.log('Available area IDs in CSV:', Array.from(allAreaIds).sort());
+                    
+                    displayQueryResults('', '', 'all');
+                });
+            }
+            
+            // Note: No overlay click to close since this is now a side modal
             
             // Close modal with Escape key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     const modal = document.getElementById('personnel-modal');
-                    if (modal.style.display === 'flex') {
+                    if (modal && modal.style.display === 'flex') {
+                        console.log('Escape key pressed, closing modal');
                         hidePersonnelModal();
                     }
                 }
