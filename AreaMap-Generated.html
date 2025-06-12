@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -331,8 +331,7 @@
         <!-- Map Container -->
         <div class="map-container">
             <!-- SVG PLACEHOLDER - This is where Power Automate will inject the SVG content -->
-            
-<svg class="svg-map" id="C05__Northern_California_B05__North_Central_LayB07__St._Louiser_2_B01__Chicago_B02__Michigan_B03__Ohio_Valley_A03__New_England_A04_New_York_A05__Philadelphia_A01__Baltimore_Coast_B06__Nashville_A02__South_East_A07__Florida_A06__Gulf_Coast_C03Houston_C02__Dallas_B08__Tulsa_B04__Central_Plains_C04__Phoenix_C07__Los_Angeles_C01__Denver_C06__Seattle_C05__Northern_California_Image" data-name="C05_ Northern California + B05_ North Central + LayB07_ St. Louiser 2 + B01_ Chicago + B02_ Michigan + B03_ Ohio Valley + A03_ New England + A04 New York + A05_ Philadelphia + A01_ Baltimore Coast + B06_ Nashville + A02_ South East + A07_ Florida + A06_ Gulf Coast + C03Houston + C02_ Dallas + B08_ Tulsa + B04_ Central Plains + C04_ Phoenix + C07_ Los Angeles + C01_ Denver + C06_ Seattle + C05_ Northern California Image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616.24 261.6">
+            <svg id="C05__Northern_California_B05__North_Central_LayB07__St._Louiser_2_B01__Chicago_B02__Michigan_B03__Ohio_Valley_A03__New_England_A04_New_York_A05__Philadelphia_A01__Baltimore_Coast_B06__Nashville_A02__South_East_A07__Florida_A06__Gulf_Coast_C03Houston_C02__Dallas_B08__Tulsa_B04__Central_Plains_C04__Phoenix_C07__Los_Angeles_C01__Denver_C06__Seattle_C05__Northern_California_Image" data-name="C05_ Northern California + B05_ North Central + LayB07_ St. Louiser 2 + B01_ Chicago + B02_ Michigan + B03_ Ohio Valley + A03_ New England + A04 New York + A05_ Philadelphia + A01_ Baltimore Coast + B06_ Nashville + A02_ South East + A07_ Florida + A06_ Gulf Coast + C03Houston + C02_ Dallas + B08_ Tulsa + B04_ Central Plains + C04_ Phoenix + C07_ Los Angeles + C01_ Denver + C06_ Seattle + C05_ Northern CaliforniaÂ Image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616.24 261.6" class="svg-map">
   <defs>
     <style>
       .cls-1 {
@@ -685,8 +684,8 @@
             </div>
 
             <div class="control-group">
-                <button id="search-button" class="search-button" onclick="performAreaQuery()">
-                    🔍 Search Personnel
+                <button id="search-button" class="search-button" onclick="performQuery()">
+                    ðŸ” Search Personnel
                 </button>
             </div>
         </div>
@@ -713,168 +712,7 @@
 
     <script>
         // POWER AUTOMATE DATA PLACEHOLDER - This is where personnel data will be injected
-        const personnelData = [
-    {
-        "Title": "John Smith",
-        "UserEmail": "john.smith@company.com",
-        "UserDisplayName": "John Smith",
-        "FirstName": "John",
-        "LastName": "Smith",
-        "PreferredFirstName": "Johnny",
-        "UserDepartment": "Sales",
-        "UserJobTitle": "Sales Engineer",
-        "PrimaryAreaIDs": ["A01", "A02"],
-        "SecondaryAreaIDs": ["B01"],
-        "ManagerDisplayName": "Jane Manager",
-        "ManagerEmail": "jane.manager@company.com",
-        "ManagerDepartment": "Sales",
-        "ManagerJobTitle": "Regional Manager"
-    },
-    {
-        "Title": "Sarah Johnson",
-        "UserEmail": "sarah.johnson@company.com",
-        "UserDisplayName": "Sarah Johnson",
-        "FirstName": "Sarah",
-        "LastName": "Johnson",
-        "PreferredFirstName": "",
-        "UserDepartment": "Engineering",
-        "UserJobTitle": "Senior Engineer",
-        "PrimaryAreaIDs": ["C01", "C02", "C08"],
-        "SecondaryAreaIDs": ["C03"],
-        "ManagerDisplayName": "Bob Director",
-        "ManagerEmail": "bob.director@company.com",
-        "ManagerDepartment": "Engineering",
-        "ManagerJobTitle": "Engineering Director"
-    },
-    {
-        "Title": "Mike Wilson",
-        "UserEmail": "mike.wilson@company.com",
-        "UserDisplayName": "Mike Wilson",
-        "FirstName": "Mike",
-        "LastName": "Wilson",
-        "PreferredFirstName": "Michael",
-        "UserDepartment": "Operations",
-        "UserJobTitle": "Operations Specialist",
-        "PrimaryAreaIDs": ["A08"],
-        "SecondaryAreaIDs": ["A07", "A06"],
-        "ManagerDisplayName": "Lisa Supervisor",
-        "ManagerEmail": "lisa.supervisor@company.com",
-        "ManagerDepartment": "Operations",
-        "ManagerJobTitle": "Operations Manager"
-    },
-    {
-        "Title": "Emily Davis",
-        "UserEmail": "emily.davis@company.com",
-        "UserDisplayName": "Emily Davis",
-        "FirstName": "Emily",
-        "LastName": "Davis",
-        "PreferredFirstName": "",
-        "UserDepartment": "Support",
-        "UserJobTitle": "Customer Success Manager",
-        "PrimaryAreaIDs": ["B05", "B06"],
-        "SecondaryAreaIDs": ["B04"],
-        "ManagerDisplayName": "Tom Lead",
-        "ManagerEmail": "tom.lead@company.com",
-        "ManagerDepartment": "Support",
-        "ManagerJobTitle": "Support Director"
-    },
-    {
-        "Title": "David Rodriguez",
-        "UserEmail": "david.rodriguez@company.com",
-        "UserDisplayName": "David Rodriguez",
-        "FirstName": "David",
-        "LastName": "Rodriguez",
-        "PreferredFirstName": "Dave",
-        "UserDepartment": "Marketing",
-        "UserJobTitle": "Regional Marketing Manager",
-        "PrimaryAreaIDs": ["C05", "C06", "C07"],
-        "SecondaryAreaIDs": ["C04"],
-        "ManagerDisplayName": "Anna Chief",
-        "ManagerEmail": "anna.chief@company.com",
-        "ManagerDepartment": "Marketing",
-        "ManagerJobTitle": "CMO"
-    },
-    {
-        "Title": "Jennifer Chen",
-        "UserEmail": "jennifer.chen@company.com",
-        "UserDisplayName": "Jennifer Chen",
-        "FirstName": "Jennifer",
-        "LastName": "Chen",
-        "PreferredFirstName": "Jen",
-        "UserDepartment": "EPC Division",
-        "UserJobTitle": "EPC Project Manager",
-        "PrimaryAreaIDs": ["EPC-Microsoft", "EPC-Amazon"],
-        "SecondaryAreaIDs": ["CLIENT-Google"],
-        "ManagerDisplayName": "Robert EPC Director",
-        "ManagerEmail": "robert.director@company.com",
-        "ManagerDepartment": "EPC Division",
-        "ManagerJobTitle": "EPC Operations Director"
-    },
-    {
-        "Title": "Thomas Anderson",
-        "UserEmail": "thomas.anderson@company.com",
-        "UserDisplayName": "Thomas Anderson",
-        "FirstName": "Thomas",
-        "LastName": "Anderson",
-        "PreferredFirstName": "Tom",
-        "UserDepartment": "EPC Division",
-        "UserJobTitle": "Senior EPC Consultant",
-        "PrimaryAreaIDs": ["PROJ-Tesla", "B03"],
-        "SecondaryAreaIDs": ["EPC-Microsoft"],
-        "ManagerDisplayName": "Jennifer Chen",
-        "ManagerEmail": "jennifer.chen@company.com",
-        "ManagerDepartment": "EPC Division",
-        "ManagerJobTitle": "EPC Project Manager"
-    },
-    {
-        "Title": "Maria Garcia",
-        "UserEmail": "maria.garcia@company.com",
-        "UserDisplayName": "Maria Garcia",
-        "FirstName": "Maria",
-        "LastName": "Garcia",
-        "PreferredFirstName": "",
-        "UserDepartment": "EPC Division",
-        "UserJobTitle": "EPC Technical Lead",
-        "PrimaryAreaIDs": ["CLIENT-IBM", "CLIENT-Oracle"],
-        "SecondaryAreaIDs": ["A05"],
-        "ManagerDisplayName": "Robert EPC Director",
-        "ManagerEmail": "robert.director@company.com",
-        "ManagerDepartment": "EPC Division",
-        "ManagerJobTitle": "EPC Operations Director"
-    },
-    {
-        "Title": "Alex Kumar",
-        "UserEmail": "alex.kumar@company.com",
-        "UserDisplayName": "Alex Kumar",
-        "FirstName": "Alex",
-        "LastName": "Kumar",
-        "PreferredFirstName": "",
-        "UserDepartment": "Special Projects",
-        "UserJobTitle": "Project Coordinator",
-        "PrimaryAreaIDs": ["SPECIAL-Government", "C01"],
-        "SecondaryAreaIDs": ["EPC-Amazon", "PROJ-Tesla"],
-        "ManagerDisplayName": "David Rodriguez",
-        "ManagerEmail": "david.rodriguez@company.com",
-        "ManagerDepartment": "Marketing",
-        "ManagerJobTitle": "CMO"
-    },
-    {
-        "Title": "Lisa Wang",
-        "UserEmail": "lisa.wang@company.com",
-        "UserDisplayName": "Lisa Wang",
-        "FirstName": "Lisa",
-        "LastName": "Wang",
-        "PreferredFirstName": "",
-        "UserDepartment": "EPC Division",
-        "UserJobTitle": "EPC Account Manager",
-        "PrimaryAreaIDs": ["CLIENT-Google"],
-        "SecondaryAreaIDs": ["CLIENT-IBM", "B07"],
-        "ManagerDisplayName": "Jennifer Chen",
-        "ManagerEmail": "jennifer.chen@company.com",
-        "ManagerDepartment": "EPC Division",
-        "ManagerJobTitle": "EPC Project Manager"
-    }
-];
+        const personnelData = [{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Albert","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A07_ Florida\"]","UserEmail":null,"LastName":"Honan","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Alec","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B01_ Chicago\"]","UserEmail":null,"LastName":"Albergo","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B02_ Michigan\"]","UserEmail":null,"LastName":"","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Brian","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A04_ NewYork\"]","UserEmail":null,"LastName":"Colton","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Carleen","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B03_ OhioValley\"]","UserEmail":null,"LastName":"Yarkosky","UserDisplayName":null,"SecondaryAreaIDs":"[\"A05_Philadelphia\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Craig","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B07_ StLouis\"]","UserEmail":null,"LastName":"Clarke","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Dale","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B06_ Nashville\"]","UserEmail":null,"LastName":"Isley","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Daniel","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C06_ Seattle\"]","UserEmail":null,"LastName":"Short","UserDisplayName":null,"SecondaryAreaIDs":"[\"C05_NorthernCalifornia\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Daniel","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B04_ CentralPlains\"]","UserEmail":null,"LastName":"Oliva","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"Dan","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Deborah","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B01_ Chicago\"]","UserEmail":null,"LastName":"Boor","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"George","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A02_ Raleigh\"]","UserEmail":null,"LastName":"Entzminger","UserDisplayName":null,"SecondaryAreaIDs":"[\"A04_NewYork\",\"B06_Nashville\",\"A07_Florida\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Gregory","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A07_ Florida\"]","UserEmail":null,"LastName":"Haines","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"Greg","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"James","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A02_ Raleigh\"]","UserEmail":null,"LastName":"Armstrong","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"James","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A04_ NewYork\"]","UserEmail":null,"LastName":"Wolfson","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"Jim","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"James","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A01_BaltimoreCoast\"]","UserEmail":null,"LastName":"Jurin","UserDisplayName":null,"SecondaryAreaIDs":"[\"A03_NewEngland\",\"A04_NewYork\",\"B03_OhioValley\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Jeremy","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C04_ Phoenix\"]","UserEmail":null,"LastName":"Sario","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Jerry","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B05_ Minneapolis\"]","UserEmail":null,"LastName":"Stanton","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"James","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C02_ Dallas\"]","UserEmail":null,"LastName":"Dunn","UserDisplayName":null,"SecondaryAreaIDs":"[\"B08_Tulsa\",\"A06_GulfCoast\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Jonathan","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C02_ Dallas\"]","UserEmail":null,"LastName":"Wheelis","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Jordan","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A01_BaltimoreCoast\"]","UserEmail":null,"LastName":"Hackney","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Keith","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C07_ Los Angeles\"]","UserEmail":null,"LastName":"Johnson","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Kevin","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A02_ Raleigh\"]","UserEmail":null,"LastName":"Key","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Kyle","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B07_ StLouis\"]","UserEmail":null,"LastName":"Breakiron","UserDisplayName":null,"SecondaryAreaIDs":"[\"A01_BaltimoreCoast\",\"C08_CentralTexas\",\"C02_Dallas\",\"C01_Denver\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Mark","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A04_ NewYork\"]","UserEmail":null,"LastName":"Sabatini","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Matthew","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A05_ Philadelphia\"]","UserEmail":null,"LastName":"Dolliver","UserDisplayName":null,"SecondaryAreaIDs":"[\"B07_StLouis\",\"B04_CentralPlains\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Melissa","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C02_ Dallas\"]","UserEmail":null,"LastName":"Poggi","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Michael","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C01_ Denver\"]","UserEmail":null,"LastName":"Agas","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Stephen","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A07_ Florida\"]","UserEmail":null,"LastName":"Sutterfield","UserDisplayName":null,"SecondaryAreaIDs":"[\"C03_Houston\",\"B05_Minneapolis\",\"B01_Chicago\",\"B02_Michigan\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Paul","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"B02_ Michigan\"]","UserEmail":null,"LastName":"Kaiser","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Richard","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A03_ NewEngland\"]","UserEmail":null,"LastName":"Noll","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Robert","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C04_ Phoenix\"]","UserEmail":null,"LastName":"Fuentes","UserDisplayName":null,"SecondaryAreaIDs":"[\"C07_LosAngeles\",\"C06_Seattle\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Robert","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C07_ Los Angeles\"]","UserEmail":null,"LastName":"Ryan","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Scott","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A05_ Philadelphia\"]","UserEmail":null,"LastName":"St Pierre","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Sherif","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C05_ Northern California\"]","UserEmail":null,"LastName":"Younan","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Stephen","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A08_Atlanta\"]","UserEmail":null,"LastName":"Lea","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Steven","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C03_ Houston\"]","UserEmail":null,"LastName":"Matos-Torres","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Tom","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"A02_ Raleigh\"]","UserEmail":null,"LastName":"Mims","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Tyler","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C03_ Houston\"]","UserEmail":null,"LastName":"Morris","UserDisplayName":null,"SecondaryAreaIDs":{},"UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null},{"ManagerJobTitle":null,"UserJobTitle":null,"FirstName":"Wayne","Title":null,"ManagerEmail":null,"ManagerDepartment":null,"PrimaryAreaIDs":"[\"C07_ Los Angeles\"]","UserEmail":null,"LastName":"Thygesen","UserDisplayName":null,"SecondaryAreaIDs":"[\"C04_Phoenix\"]","UserDepartment":null,"PreferredFirstName":"","ManagerDisplayName":null}];
 
         // Area name mappings - updated for new SVG
         const areaNames = {
@@ -911,7 +749,7 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 AreaMap initializing...');
+            console.log('ðŸš€ AreaMap initializing...');
             
             // Set up SVG interactions
             setupSVGInteractions();
@@ -928,12 +766,12 @@
             // Initialize user search
             initializeUserSearch();
             
-            console.log('✅ AreaMap initialization complete');
+            console.log('âœ… AreaMap initialization complete');
         });
 
         // Set up SVG interactions (now works with inline SVG)
         function setupSVGInteractions() {
-            console.log('🎯 Setting up SVG interactions...');
+            console.log('ðŸŽ¯ Setting up SVG interactions...');
             
             // Find all path elements in the inline SVG
             const paths = document.querySelectorAll('.svg-map path[id]');
@@ -1096,13 +934,13 @@
             const searchButton = document.getElementById('search-button');
             switch(searchType) {
                 case 'regional':
-                    searchButton.innerHTML = '🔍 Search Personnel';
+                    searchButton.innerHTML = 'ðŸ” Search Personnel';
                     break;
                 case 'epc':
-                    searchButton.innerHTML = '🏢 Search EPC Personnel';
+                    searchButton.innerHTML = 'ðŸ¢ Search EPC Personnel';
                     break;
                 case 'user':
-                    searchButton.innerHTML = '👤 Find User';
+                    searchButton.innerHTML = 'ðŸ‘¤ Find User';
                     break;
             }
             
@@ -1111,58 +949,58 @@
 
         // Initialize EPC client dropdown
         function initializeClientDropdown() {
-            console.log('🏢 Initializing EPC client dropdown...');
+            console.log('ðŸ¢ Initializing EPC client dropdown...');
             const clientSelect = document.getElementById('client-select');
             
             if (!clientSelect) {
-                console.error('❌ Client select element not found!');
+                console.error('âŒ Client select element not found!');
                 return;
             }
             
             // Extract unique EPC clients from Primary/Secondary Area IDs
             const clients = new Set();
             
-            console.log(`📊 Processing ${personnelData.length} personnel records for EPC clients`);
+            console.log(`ðŸ“Š Processing ${personnelData.length} personnel records for EPC clients`);
             
             personnelData.forEach((person, index) => {
-                console.log(`👤 Processing person ${index + 1}: ${person.Title}`);
+                console.log(`ðŸ‘¤ Processing person ${index + 1}: ${person.Title}`);
                 
                 // Check Primary Areas for EPC codes (non-regional codes)
                 const primaryAreas = person.PrimaryAreaIDs || [];
-                console.log(`  📍 Primary areas: ${JSON.stringify(primaryAreas)}`);
+                console.log(`  ðŸ“ Primary areas: ${JSON.stringify(primaryAreas)}`);
                 
                 primaryAreas.forEach(areaId => {
                     if (areaId && isEPCCode(areaId)) {
                         const clientName = extractClientNameFromCode(areaId);
-                        console.log(`    🎯 EPC code found: ${areaId} → ${clientName}`);
+                        console.log(`    ðŸŽ¯ EPC code found: ${areaId} â†’ ${clientName}`);
                         if (clientName) {
                             clients.add(clientName);
                         }
                     } else {
-                        console.log(`    📍 Regional code: ${areaId}`);
+                        console.log(`    ðŸ“ Regional code: ${areaId}`);
                     }
                 });
                 
                 // Check Secondary Areas for EPC codes
                 const secondaryAreas = person.SecondaryAreaIDs || [];
-                console.log(`  📍 Secondary areas: ${JSON.stringify(secondaryAreas)}`);
+                console.log(`  ðŸ“ Secondary areas: ${JSON.stringify(secondaryAreas)}`);
                 
                 secondaryAreas.forEach(areaId => {
                     if (areaId && isEPCCode(areaId)) {
                         const clientName = extractClientNameFromCode(areaId);
-                        console.log(`    🎯 EPC code found: ${areaId} → ${clientName}`);
+                        console.log(`    ðŸŽ¯ EPC code found: ${areaId} â†’ ${clientName}`);
                         if (clientName) {
                             clients.add(clientName);
                         }
                     } else {
-                        console.log(`    📍 Regional code: ${areaId}`);
+                        console.log(`    ðŸ“ Regional code: ${areaId}`);
                     }
                 });
             });
             
             // Sort clients and add to dropdown
             const sortedClients = Array.from(clients).sort();
-            console.log(`🎉 Found EPC clients: ${JSON.stringify(sortedClients)}`);
+            console.log(`ðŸŽ‰ Found EPC clients: ${JSON.stringify(sortedClients)}`);
             
             sortedClients.forEach(client => {
                 const option = document.createElement('option');
@@ -1171,7 +1009,7 @@
                 clientSelect.appendChild(option);
             });
             
-            console.log(`✅ Initialized ${sortedClients.length} EPC clients from area codes`);
+            console.log(`âœ… Initialized ${sortedClients.length} EPC clients from area codes`);
         }
 
         // Check if an area code is an EPC client code (not regional A/B/C codes)
@@ -1211,15 +1049,14 @@
             const userSearch = document.getElementById('user-search');
             const userSelect = document.getElementById('user-select');
             
-            // Populate dropdown with all users initially
-            populateUserDropdown(personnelData);
-            
             userSearch.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase().trim();
                 
+                // Clear previous results
+                userSelect.innerHTML = '<option value="">-- Select from results --</option>';
+                
                 if (searchTerm.length < 2) {
-                    // Show all users when search is cleared
-                    populateUserDropdown(personnelData);
+                    userSelect.disabled = true;
                     return;
                 }
                 
@@ -1264,91 +1101,63 @@
             });
         }
 
-        // Populate user dropdown with users
-        function populateUserDropdown(users) {
-            const userSelect = document.getElementById('user-select');
-            
-            // Clear previous options
-            userSelect.innerHTML = '<option value="">-- Select User --</option>';
-            
-            if (!users || users.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'No users available';
-                option.disabled = true;
-                userSelect.appendChild(option);
-                userSelect.disabled = true;
-                return;
-            }
-            
-            // Add all users to dropdown
-            users.forEach(person => {
-                const option = document.createElement('option');
-                const displayName = person.PreferredFirstName || person.FirstName;
-                const fullName = person.Title || `${person.FirstName} ${person.LastName}`;
-                option.value = person.UserEmail || person.ID;
-                option.textContent = `${fullName} (${person.UserEmail})`;
-                option.dataset.personData = JSON.stringify(person);
-                userSelect.appendChild(option);
-            });
-            
-            userSelect.disabled = false;
-        }
-
         // Perform personnel query (for search button)
         function performQuery() {
-            console.log('🔍 performQuery called - simplified version');
+            console.log('ðŸ” performQuery called');
             
             try {
-                // Simple test: show all personnel or test based on current selection
-                let results = personnelData || [];
-                console.log('📊 Personnel data available:', results.length, 'records');
+                const searchType = document.querySelector('input[name="searchType"]:checked').value;
+                console.log('ðŸŽ¯ Search type selected:', searchType);
                 
-                if (results.length === 0) {
-                    console.log('⚠️ No personnel data found');
-                    showPersonnelModal('Search Results', 'No personnel data available', []);
-                    return;
+                switch(searchType) {
+                    case 'regional':
+                        console.log('ðŸ“ Calling performRegionalQuery');
+                        performRegionalQuery();
+                        break;
+                    case 'epc':
+                        console.log('ðŸ¢ Calling performEPCQuery');
+                        performEPCQuery();
+                        break;
+                    case 'user':
+                        console.log('ðŸ‘¤ Calling performUserQuery');
+                        performUserQuery();
+                        break;
+                    default:
+                        console.error('âŒ Unknown search type:', searchType);
                 }
-                
-                // For now, just show all personnel to test the modal
-                const title = 'All Personnel';
-                const summary = `${results.length} personnel found`;
-                console.log('🚀 Showing modal with', results.length, 'results');
-                showPersonnelModal(title, summary, results);
-                
             } catch (error) {
-                console.error('❌ Error in performQuery:', error);
+                console.error('âŒ Error in performQuery:', error);
                 alert('Search error: ' + error.message);
             }
         }
 
         // Perform regional query
         function performRegionalQuery() {
-            console.log('📍 performRegionalQuery started');
+            console.log('ðŸ“ performRegionalQuery started');
             
             const region = document.getElementById('region-select').value;
             const area = document.getElementById('area-select').value;
             const coverageType = document.querySelector('input[name="coverage"]:checked').value;
             
-            console.log('📊 Regional query inputs:', { region, area, coverageType });
+            console.log('ðŸ“Š Regional query inputs:', { region, area, coverageType });
             
             // Validation: require at least region selection for manual searches
             if (!region && !area) {
-                console.log('❌ Validation failed: no region or area selected');
+                console.log('âŒ Validation failed: no region or area selected');
                 alert('Please select at least a Region to search for personnel.');
                 return;
             }
             
-            console.log('✅ Validation passed, finding matching personnel...');
+            console.log('âœ… Validation passed, finding matching personnel...');
             
             // Find matching personnel
             const results = findMatchingPersonnel(region, area, coverageType);
-            console.log(`🎯 Found ${results.length} matching personnel:`, results.map(p => p.Title));
+            console.log(`ðŸŽ¯ Found ${results.length} matching personnel:`, results.map(p => p.Title));
             
             // Show results in modal
             const title = area || region || 'All Areas';
             const summary = `${results.length} personnel found`;
-            console.log('🚀 Calling showPersonnelModal...');
+            console.log('ðŸš€ Calling showPersonnelModal...');
             showPersonnelModal(title, summary, results);
         }
 
@@ -1487,40 +1296,52 @@
             });
         }
 
-        // Show personnel modal (simplified working version)
+        // Show personnel modal
         function showPersonnelModal(title, summary, results) {
-            console.log('showPersonnelModal called:', title, summary, results.length);
+            console.log('ðŸ“‹ showPersonnelModal called:', { title, summary, resultCount: results.length });
             
             const modal = document.getElementById('modal-overlay');
             const modalTitle = document.getElementById('modal-title');
             const modalSubtitle = document.getElementById('modal-subtitle');
             const modalContent = document.getElementById('modal-content');
             
+            if (!modal) {
+                console.error('âŒ Modal element not found!');
+                return;
+            }
+            
+            console.log('ðŸŽ¯ Setting modal title and content...');
             modalTitle.textContent = title;
             modalSubtitle.textContent = summary;
             
+            // Build content
             let content = '';
             if (results.length === 0) {
-                content = '<div style="text-align: center; padding: 40px; color: #666;">No personnel found.</div>';
+                content = '<div style="text-align: center; padding: 40px; color: #666;">No personnel found for the selected criteria.</div>';
+                console.log('âš ï¸ No results found, showing empty message');
             } else {
-                results.forEach(person => {
-                    content += `
-                        <div class="person-card">
-                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiNmMGY2ZmMiLz4KPHN2ZyB4PSIxMiIgeT0iMTAiIHdpZHRoPSIyNiIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI2IDMwIiBmaWxsPSJub25lIj4KPGNpcmNsZSBjeD0iMTMiIGN5PSI5IiByPSI2IiBmaWxsPSIjNjY2Ii8+CjxwYXRoIGQ9Ik0yIDI2YzAtNy43MyA1LjgyLTE0IDEzLTE0czEzIDYuMjcgMTMgMTQiIGZpbGw9IiM2NjYiLz4KPC9zdmc+Cjwvc3ZnPg==" class="profile-image" alt="${person.Title}">
-                            <div class="person-info">
-                                <div class="person-name">${person.Title}</div>
-                                <div class="person-email">${person.UserEmail}</div>
-                                <div class="person-title">${person.UserJobTitle}</div>
-                            </div>
-                        </div>
-                    `;
+                console.log(`ðŸ‘¥ Building content for ${results.length} personnel`);
+                results.forEach((person, index) => {
+                    console.log(`  ðŸ‘¤ Adding person ${index + 1}: ${person.Title}`);
+                    content += createPersonCard(person, true);
                 });
             }
             
             modalContent.innerHTML = content;
+            console.log('ðŸ“± Adding "show" class to modal...');
             modal.classList.add('show');
             
-            console.log('Modal should now be visible');
+            // Double-check modal visibility
+            setTimeout(() => {
+                const isVisible = modal.classList.contains('show');
+                const computedStyle = window.getComputedStyle(modal);
+                console.log('ðŸ” Modal visibility check:', { 
+                    hasShowClass: isVisible, 
+                    opacity: computedStyle.opacity,
+                    transform: computedStyle.transform,
+                    right: computedStyle.right
+                });
+            }, 100);
         }
 
         // Close modal
@@ -1638,7 +1459,7 @@
             lastSyncKey: 'areaMapLastSync',
             pendingDataKey: 'areaMapPendingClicks',
             sharePointListName: 'AreaMapAnalytics',
-            siteUrl: 'https://yourtenant.sharepoint.com/sites/yoursite' // Power Automate placeholder
+            siteUrl: 'https://tenant.sharepoint.com/sites/sitename' // Power Automate placeholder
         };
 
         function logAreaClick(areaCode, areaName, region) {
@@ -1660,7 +1481,9 @@
             checkSyncThreshold();
             
             // Optional custom analytics code
-            console.log('Enhanced analytics system active - data will persist across rebuilds');
+                        console.log('Local testing - Enhanced analytics system built into template');
+            // For local testing, just log to console
+            // The enhanced persistence system will work in SharePoint environment
         }
 
         function addToLocalBuffer(clickData) {
@@ -1699,13 +1522,13 @@
                     await batchUploadToSharePoint(pendingClicks);
                     localStorage.removeItem(ANALYTICS_CONFIG.pendingDataKey);
                     localStorage.setItem(ANALYTICS_CONFIG.lastSyncKey, Date.now().toString());
-                    console.log('✅ Analytics sync completed');
+                    console.log('âœ… Analytics sync completed');
                 } else {
                     console.warn('SharePoint context not available - keeping data for later sync');
                 }
                 
             } catch (error) {
-                console.error('❌ Analytics sync failed:', error);
+                console.error('âŒ Analytics sync failed:', error);
             }
         }
 
