@@ -2,75 +2,95 @@
 
 ## 🚨 Common Issues and Solutions
 
-This guide provides solutions to frequently encountered problems with the SharePoint Interactive Area Map system.
+This guide provides solutions to frequently encountered problems with the SharePoint Interactive Area Map template system and Power Automate integration.
 
 ## 🗺️ Map Display Issues
 
-### SVG Map Not Loading
+### SVG Map Not Loading (Template System)
 
 **Symptoms:**
 - Blank area where map should display
-- "Error loading SVG" message
-- Console error: "Cannot read properties of null"
+- Missing SVG content in generated HTML
+- Console error: "SVG content not found"
 
 **Solutions:**
 
-1. **File Path Verification**
-   ```javascript
-   // Check if SVG file exists
-   fetch('./Artboard 1.svg')
-       .then(response => {
-           if (response.ok) {
-               console.log('✅ SVG file accessible');
-           } else {
-               console.error('❌ SVG file not found:', response.status);
-           }
-       });
+1. **Template Placeholder Check**
+   ```html
+   <!-- Verify {{SVG_CONTENT}} placeholder exists in template -->
+   <div class="map-container">
+       {{SVG_CONTENT}}
+   </div>
    ```
 
-2. **File Name Check**
-   - Verify exact file name: `Artboard 1.svg`
-   - Check for extra spaces or hidden characters
-   - Ensure file extension is `.svg` not `.SVG`
-
-3. **Permission Issues**
-   ```powershell
-   # Check SharePoint permissions
-   Get-PnPFile -Url "Documents/Artboard 1.svg" -AsFileObject
+2. **Power Automate SVG Processing**
+   ```javascript
+   // Check if Power Automate is reading SVG correctly
+   // Verify file name is exactly: "Artboard 1-3.svg"
    ```
 
-### Map Areas Not Clickable
-
-**Symptoms:**
-- Map displays but clicking does nothing
-- No console errors
-- Hover effects work but clicks don't
-
-**Solutions:**
-
-1. **SVG Structure Validation**
+3. **SVG Content Validation**
    ```javascript
-   // Check if SVG has loaded properly
-   const svgDoc = document.getElementById('svgObject').contentDocument;
-   if (!svgDoc) {
-       console.error('SVG document not accessible');
+   // In generated HTML, check if SVG is properly embedded
+   const svgElement = document.querySelector('.svg-map');
+   if (!svgElement) {
+       console.error('❌ SVG not embedded in HTML');
    }
    ```
 
-2. **Event Listener Setup**
+4. **File Name Update**
+   - Ensure using correct file: `Artboard 1-3.svg` (not old version)
+   - Update Power Automate flow to reference new filename
+   - Check template config points to correct SVG file
+
+### Map Areas Not Clickable (Grouped Areas)
+
+**Symptoms:**
+- Map displays but clicking does nothing
+- Some areas work but grouped areas don't
+- New areas (A08, C08) not responding
+
+**Solutions:**
+
+1. **Grouped Area Handler Check**
    ```javascript
-   // Verify event listeners are attached
-   svgObject.addEventListener('load', function() {
-       const svgDoc = svgObject.contentDocument;
-       const paths = svgDoc.querySelectorAll('path[id]');
-       console.log(`Found ${paths.length} clickable areas`);
+   // Verify grouped area click handling
+   function handleAreaClick(event) {
+       const pathId = event.target.getAttribute('id');
+       const areaMatch = pathId.match(/^([A-C]\d{2})/);
+       if (!areaMatch) {
+           console.error('Invalid area ID format:', pathId);
+           return;
+       }
+       
+       const areaCode = areaMatch[1];
+       console.log('Clicked area group:', areaCode);
+   }
+   ```
+
+2. **New Area ID Validation**
+   ```javascript
+   // Check if new areas are properly mapped
+   const newAreas = ['A02', 'A08', 'C08'];
+   newAreas.forEach(code => {
+       if (!areaNames[code]) {
+           console.error('Missing area mapping for:', code);
+       }
    });
    ```
 
-3. **Area ID Format**
-   - Ensure area IDs follow format: `A1_AreaName`
-   - Check for duplicate IDs
-   - Verify area codes match personnel CSV
+3. **Event Listener Setup for Inline SVG**
+   ```javascript
+   // Different from object-based SVG - events are on inline elements
+   document.querySelectorAll('.svg-map path[id]').forEach(path => {
+       path.addEventListener('click', handleAreaClick);
+   });
+   ```
+
+4. **Area ID Format Updates**
+   - New format: `A01_BaltimoreCoast`, `A08_Atlanta`, `C08_CentralTexas`
+   - Grouped areas: `A04_NewYork-2`, `B05_Minneapolis-2`
+   - Verify area codes match new SVG structure
 
 ### Visual Display Problems
 
@@ -232,24 +252,88 @@ This guide provides solutions to frequently encountered problems with the ShareP
    }
    ```
 
-## 📊 Analytics Issues
+## 🔄 Power Automate Issues
 
-### Analytics Not Logging
+### Template Generation Failing
 
 **Symptoms:**
-- Clicks detected but no CSV updates
-- Console shows "Analytics logged" but file unchanged
-- localStorage data present but CSV empty
+- Power Automate flow runs but generates empty HTML
+- Placeholders not being replaced
+- Generated file missing content
 
 **Solutions:**
 
-1. **SharePoint Context Check**
+1. **Placeholder Syntax Check**
    ```javascript
-   // Verify SharePoint environment
-   if (typeof _spPageContextInfo === 'undefined') {
-       console.warn('SharePoint context not available - analytics will use localStorage only');
-   } else {
-       console.log('SharePoint context available:', _spPageContextInfo.webAbsoluteUrl);
+   // Verify placeholder format in template
+   const requiredPlaceholders = [
+       '{{SVG_CONTENT}}',
+       '{{PERSONNEL_DATA}}',
+       '{{TITLE}}'
+   ];
+   
+   // Check if all placeholders exist in template
+   requiredPlaceholders.forEach(placeholder => {
+       if (!templateContent.includes(placeholder)) {
+           console.error('Missing placeholder:', placeholder);
+       }
+   });
+   ```
+
+2. **Data Transformation Issues**
+   ```javascript
+   // Check personnel data format
+   const personnelJSON = JSON.stringify(personnelData);
+   if (personnelJSON === '[]' || personnelJSON === 'null') {
+       console.error('Personnel data is empty or invalid');
+   }
+   ```
+
+3. **Power Automate Expression Debugging**
+   ```javascript
+   // Add to Power Automate flow for debugging
+   replace(replace(body('Get_Template'), '{{SVG_CONTENT}}', body('Get_SVG')), '{{PERSONNEL_DATA}}', string(body('Get_Personnel')))
+   ```
+
+### Flow Trigger Issues
+
+**Symptoms:**
+- Flow doesn't run when Personnel list changes
+- Manual flow runs work but automatic doesn't
+- Delayed execution
+
+**Solutions:**
+
+1. **Trigger Configuration**
+   - Verify "When an item is created or modified" trigger
+   - Check if trigger is on correct SharePoint list
+   - Ensure flow has proper permissions
+
+2. **List Column Changes**
+   - Verify trigger responds to all necessary columns
+   - Check if computed columns are causing issues
+   - Test with simple field changes first
+
+## 📊 Analytics Issues (Inline System)
+
+### Analytics Not Logging in Generated HTML
+
+**Symptoms:**
+- Clicks detected but no analytics captured
+- Template has analytics but generated HTML doesn't
+- Console shows analytics disabled
+
+**Solutions:**
+
+1. **Template Analytics Placeholder**
+   ```javascript
+   // Check if {{ANALYTICS_FUNCTION}} is being filled
+   function logAreaClick(areaCode, areaName, region) {
+       {{ANALYTICS_FUNCTION}}  // Should be replaced with actual code
+       
+       if (typeof {{ANALYTICS_FUNCTION}} === 'string') {
+           console.error('Analytics placeholder not replaced');
+       }
    }
    ```
 

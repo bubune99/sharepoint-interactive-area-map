@@ -2,38 +2,104 @@
 
 ## 📖 Overview
 
-This document provides comprehensive technical specifications for the SharePoint Interactive Area Map system APIs, functions, and integration points.
+This document provides comprehensive technical specifications for the SharePoint Interactive Area Map template system, including Power Automate placeholders, inline functions, and integration points.
 
-## 🗺️ Core Map Functions
+## 🔐 Template Placeholders
 
-### `initializeMap()`
-Initializes the interactive SVG map and sets up event listeners.
+### `{{SVG_CONTENT}}`
+Embeds the complete SVG map content directly into the HTML.
+
+**Source:** Artboard 1-3.svg file  
+**Processing:** Remove XML declaration, add CSS class  
+**Output:** Complete inline SVG element  
+
+```html
+<div class="map-container">
+    {{SVG_CONTENT}}  <!-- Replaced with full SVG content -->
+</div>
+```
+
+### `{{PERSONNEL_DATA}}`
+Injects filtered personnel data array from SharePoint list.
+
+**Source:** SharePoint Personnel list  
+**Processing:** Filter by IncludeOnMap=true, convert to JSON array format  
+**Output:** JavaScript array assignment with only visible personnel  
 
 ```javascript
-function initializeMap() {
-    const svgObject = document.getElementById('svgObject');
-    svgObject.addEventListener('load', function() {
-        setupAreaClickHandlers();
-        setupHoverEffects();
-    });
+const personnelData = {{PERSONNEL_DATA}};  // Replaced with filtered data
+// Only includes personnel where IncludeOnMap=true
+```
+
+**Filter Logic:**
+```javascript
+// Power Automate filter expression
+filter(body('Get_Personnel_Items')?['value'], item()['IncludeOnMap'] eq true)
+```
+
+### `{{TITLE}}`
+Sets the page title and header text.
+
+**Source:** Configuration or default value  
+**Processing:** Direct string replacement  
+**Default:** "Area Map - Personnel Query"  
+
+```html
+<title>{{TITLE}}</title>
+```
+
+### `{{ANALYTICS_FUNCTION}}`
+Optional analytics code injection point.
+
+**Source:** Conditional based on configuration  
+**Processing:** Code snippet or comment  
+**Options:** Analytics code or "// Analytics disabled"  
+
+```javascript
+function logAreaClick(areaCode, areaName, region) {
+    {{ANALYTICS_FUNCTION}}  // Custom analytics code here
 }
 ```
 
-**Parameters:** None  
-**Returns:** `void`  
-**Dependencies:** SVG object element with ID 'svgObject'
+### `{{SITE_URL}}`
+SharePoint site URL for analytics persistence.
+
+**Source:** Power Automate trigger context  
+**Processing:** Direct URL replacement from triggerOutputs()  
+**Output:** Full SharePoint site URL for REST API calls  
+
+```javascript
+const ANALYTICS_CONFIG = {
+    siteUrl: '{{SITE_URL}}',  // Replaced with actual SharePoint URL
+    sharePointListName: 'AreaMapAnalytics'
+};
+```
+
+## 🗺️ Inline Map Functions (Generated)
 
 ### `handleAreaClick(event)`
-Processes clicks on map areas and triggers personnel queries.
+Enhanced to handle grouped areas with multiple paths.
 
 ```javascript
 function handleAreaClick(event) {
     const pathId = event.target.getAttribute('id');
-    const [areaCode, areaName] = parseAreaId(pathId);
     
-    logAreaClick(areaCode, areaName, getRegionFromAreaCode(areaCode));
+    // Extract area code (handles grouped areas)
+    const areaMatch = pathId.match(/^([A-C]\d{2})/);
+    if (!areaMatch) return;
+    
+    const areaCode = areaMatch[1];
+    
+    // Select all paths with same area code (grouped areas)
+    document.querySelectorAll(`.svg-map path[id^="${areaCode}_"]`).forEach(p => {
+        p.classList.add('selected');
+    });
+    
+    // Continue with query and analytics
+    const areaName = areaNames[areaCode];
+    const region = getRegionFromAreaCode(areaCode);
+    logAreaClick(areaCode, areaName, region);
     performQuery();
-    showPersonnelModal(title, summary, results);
 }
 ```
 
@@ -41,26 +107,28 @@ function handleAreaClick(event) {
 - `event` (Event): Mouse click event object
 
 **Returns:** `void`  
-**Side Effects:** Updates UI, logs analytics, shows modal
+**Side Effects:** Highlights all grouped paths, updates UI, logs analytics
 
-### `parseAreaId(pathId)`
-Extracts area code and name from SVG path ID.
+**New Features:**
+- Handles grouped areas (A04, B05, C06)
+- Works with new area format (A01_BaltimoreCoast)
+- Supports new areas (A08, C08)
+
+### `getAreaGroup(pathId)`
+Extracts base area code from grouped path IDs.
 
 ```javascript
-function parseAreaId(pathId) {
-    // Format: "A1_Baltimore Coast" or "A1"
-    const parts = pathId.split('_');
-    const areaCode = parts[0];
-    const areaName = parts.length > 1 ? parts.slice(1).join('_') : getAreaName(areaCode);
-    
-    return [areaCode, areaName];
+function getAreaGroup(pathId) {
+    // Returns "A04" for both "A04_NewYork" and "A04_NewYork-2"
+    const match = pathId.match(/^([A-C]\d{2})/);
+    return match ? match[1] : null;
 }
 ```
 
 **Parameters:**
-- `pathId` (string): SVG path element ID
+- `pathId` (string): SVG path element ID (e.g., "A04_NewYork-2")
 
-**Returns:** `[string, string]` - Array containing [areaCode, areaName]
+**Returns:** `string|null` - Base area code or null if invalid format
 
 ### `getRegionFromAreaCode(areaCode)`
 Determines geographic region from area code.
@@ -139,10 +207,11 @@ function parseCSV(csvText) {
 - `Manager` (Object): Manager information
 
 ### `findMatchingPersonnel(region, area, coverageType)`
-Queries personnel data based on search criteria.
+Queries personnel data based on search criteria (filtered by IncludeOnMap).
 
 ```javascript
 function findMatchingPersonnel(region, area, coverageType) {
+    // Personnel data is pre-filtered by IncludeOnMap=true in template
     return personnelData.filter(person => {
         const primaryMatch = checkAreaMatch(person.PrimaryAreaIDs, region, area);
         const secondaryMatch = checkAreaMatch(person.SecondaryAreaIDs, region, area);
@@ -162,7 +231,13 @@ function findMatchingPersonnel(region, area, coverageType) {
 - `area` (string): Specific area name (or "" for region-wide)
 - `coverageType` (string): Coverage filter ("primary", "secondary", "all")
 
-**Returns:** `Array<Object>` - Filtered personnel records
+**Returns:** `Array<Object>` - Filtered personnel records (only IncludeOnMap=true)
+
+**Visibility Control:**
+Personnel data is automatically filtered at the template level to only include records where `IncludeOnMap=true`. This means:
+- Personnel on FMLA, extended PTO, or temporary leave can be hidden by setting `IncludeOnMap=false`
+- Only active, visible personnel appear in search results
+- The filtering happens during template generation, not at query time
 
 ### `createPersonCard(person, isModal)`
 Generates HTML for personnel display card.
@@ -195,61 +270,201 @@ function createPersonCard(person, isModal = false) {
 
 **Returns:** `string` - HTML string for personnel card
 
-## 📊 Analytics Functions
+## 🔧 Power Automate Integration
+
+### Data Transformation Functions
+
+#### `transformPersonnelData(sharePointItems)`
+Converts SharePoint list items to AreaMap format with IncludeOnMap filtering.
+
+```javascript
+// Power Automate filter expression (applied before transformation)
+filter(body('Get_Personnel_Items')?['value'], item()['IncludeOnMap'] eq true)
+
+// Power Automate transformation expression
+{
+  "Title": "@{items('Apply_to_each')?['Title']}",
+  "UserEmail": "@{items('Apply_to_each')?['UserEmail']}",
+  "PrimaryAreaIDs": "@{split(items('Apply_to_each')?['PrimaryAreaIDs'], ';')}",
+  "SecondaryAreaIDs": "@{split(items('Apply_to_each')?['SecondaryAreaIDs'], ';')}",
+  "IncludeOnMap": "@{items('Apply_to_each')?['IncludeOnMap']}"
+}
+```
+
+#### `processSVGContent(svgText)`
+Cleans and prepares SVG for inline embedding.
+
+**Processing Steps:**
+1. Remove XML declaration (`<?xml version="1.0"?>`)
+2. Add CSS class (`class="svg-map"`)
+3. Ensure viewBox attribute exists
+4. Validate path elements have IDs
+
+#### `replacePlaceholders(template, data)`
+Master function for template processing with selective triggers.
+
+```javascript
+// Power Automate compose action with additional placeholders
+replace(
+  replace(
+    replace(
+      replace(
+        variables('templateContent'),
+        '{{SVG_CONTENT}}', 
+        variables('processedSVG')
+      ),
+      '{{PERSONNEL_DATA}}',
+      string(variables('filteredPersonnelArray'))
+    ),
+    '{{SITE_URL}}',
+    triggerOutputs()?['body/webUrl']
+  ),
+  '{{TITLE}}',
+  'Area Map - Personnel Query'
+)
+
+// Selective trigger condition (only rebuild for relevant changes)
+@{or(
+  triggerOutputs()?['body/hasColumnChanged']?['Title'],
+  triggerOutputs()?['body/hasColumnChanged']?['UserDisplayName'],
+  triggerOutputs()?['body/hasColumnChanged']?['PrimaryAreaIDs'],
+  triggerOutputs()?['body/hasColumnChanged']?['SecondaryAreaIDs'],
+  triggerOutputs()?['body/hasColumnChanged']?['IncludeOnMap']
+)}
+```
+
+## 📊 Enhanced Analytics with Persistence
 
 ### `logAreaClick(areaCode, areaName, region)`
-Records area click for analytics tracking.
+Records clicks with persistence strategy that survives template rebuilds.
 
 ```javascript
 function logAreaClick(areaCode, areaName, region) {
     const clickData = {
+        id: generateClickId(),
         timestamp: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().split(' ')[0],
-        areaCode: areaCode,
-        areaName: areaName,
+        hour: new Date().getHours(),
+        areaCode: areaCode,  // Base code for grouped areas (A04, not A04-2)
+        areaName: areaName,  // Updated names (Atlanta, Central Texas)
         region: region,
         sessionId: generateSessionId(),
         userAgent: navigator.userAgent,
         url: window.location.href
     };
     
-    appendToLocalStorage(clickData);
-    writeToCSVFile(clickData);
+    // Enhanced persistence strategy
+    addToLocalBuffer(clickData);
+    checkSyncThreshold();
     
-    console.log('Click logged:', clickData);
+    {{ANALYTICS_FUNCTION}}  // Template placeholder for custom analytics
 }
 ```
 
-**Parameters:**
-- `areaCode` (string): Area identifier
-- `areaName` (string): Human-readable area name
-- `region` (string): Geographic region
-
-**Returns:** `void`  
-**Side Effects:** Updates localStorage and CSV file
-
-### `generateSessionId()`
-Creates unique session identifier for analytics.
+### `syncToSharePoint()`
+Syncs localStorage buffer to SharePoint Analytics list.
 
 ```javascript
-function generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+async function syncToSharePoint() {
+    const pendingClicks = JSON.parse(localStorage.getItem('areaMapPendingClicks') || '[]');
+    
+    for (const click of pendingClicks) {
+        const itemData = {
+            '__metadata': { 'type': 'SP.Data.AreaMapAnalyticsListItem' },
+            'Title': `Click-${click.areaCode}-${click.timestamp}`,
+            'ClickTimestamp': click.timestamp,
+            'AreaCode': click.areaCode,
+            'AreaName': click.areaName,
+            'Region': click.region,
+            'SessionId': click.sessionId,
+            'ClickDate': click.date,
+            'ClickHour': click.hour
+        };
+        
+        await fetch(url, { method: 'POST', body: JSON.stringify(itemData) });
+    }
+    
+    localStorage.removeItem('areaMapPendingClicks');
 }
 ```
 
-**Parameters:** None  
-**Returns:** `string` - Unique session ID  
-**Format:** "session_{timestamp}_{randomString}"
+**Persistence Features:**
+- localStorage buffer (1000 items max)
+- 12-hour automatic sync to SharePoint list
+- Pre-rebuild emergency sync
+- Survives template regeneration
 
-### `writeToCSVFile(clickData)`
-Appends analytics data to master CSV file.
+## 📈 Area Configuration Reference
+
+### Updated Area Mappings (24 Total Areas)
 
 ```javascript
-function writeToCSVFile(clickData) {
-    const csvRow = [
-        clickData.timestamp,
-        clickData.date,
+const areaNames = {
+    // East Region (8 areas)
+    'A01': 'Baltimore Coast',
+    'A02': 'Raleigh',         // NEW (was South East)
+    'A03': 'New England',
+    'A04': 'New York',        // Grouped: A04_NewYork + A04_NewYork-2
+    'A05': 'Philadelphia',
+    'A06': 'Gulf Coast',
+    'A07': 'Florida',
+    'A08': 'Atlanta',         // NEW
+    
+    // Central Region (8 areas)
+    'B01': 'Chicago',
+    'B02': 'Michigan',
+    'B03': 'Ohio Valley',
+    'B04': 'Central Plains',
+    'B05': 'Minneapolis',     // RENAMED + Grouped: B05_Minneapolis + B05_Minneapolis-2
+    'B06': 'Nashville',
+    'B07': 'St. Louis',
+    'B08': 'Tulsa',
+    
+    // West Region (8 areas)
+    'C01': 'Denver',
+    'C02': 'Dallas',
+    'C03': 'Houston',
+    'C04': 'Phoenix',
+    'C05': 'Northern California',
+    'C06': 'Seattle',         // May have grouped paths
+    'C07': 'Los Angeles',
+    'C08': 'Central Texas'    // NEW
+};
+```
+
+### Power Automate Configuration
+
+```json
+{
+  "templateFile": "AreaMap-PowerAutomate-Template.html",
+  "svgFile": "Artboard 1-3.svg",
+  "outputFile": "AreaMap.html",
+  "placeholders": {
+    "{{SVG_CONTENT}}": "embedSVG",
+    "{{PERSONNEL_DATA}}": "sharePointListFiltered",
+    "{{SITE_URL}}": "triggerContext",
+    "{{TITLE}}": "static",
+    "{{ANALYTICS_FUNCTION}}": "conditional"
+  },
+  "triggerColumns": [
+    "Title", "UserDisplayName", "FirstName", "LastName",
+    "PreferredFirstName", "UserJobTitle", "PrimaryAreaIDs",
+    "SecondaryAreaIDs", "ManagerDisplayName", "ManagerEmail",
+    "IncludeOnMap"
+  ],
+  "filterExpression": "IncludeOnMap eq true"
+}
+```
+
+**Enhanced Template Flow:**
+1. Trigger on Personnel list change (selective columns only)
+2. Check if IncludeOnMap=true user is affected
+3. Sync pending analytics to SharePoint list
+4. Read template and SVG files
+5. Get filtered Personnel list data (IncludeOnMap=true)
+6. Transform and replace placeholders
+7. Write generated AreaMap.html
+8. Deploy to SharePoint
         clickData.time,
         clickData.areaCode,
         escapeCSVValue(clickData.areaName),

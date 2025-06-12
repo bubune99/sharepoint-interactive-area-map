@@ -488,7 +488,7 @@
         
         <div class="map-container">
             <!-- SVG Artboard Map -->
-            <object id="svg-map" class="svg-map" type="image/svg+xml" data="./Artboard 1.svg"></object>
+            <object id="svg-map" class="svg-map" type="image/svg+xml" data="./Artboard 1-3.svg"></object>
         </div>
         
         <!-- Query Interface -->
@@ -718,12 +718,13 @@
             }
         }
         
-        // Area name mapping (supports both A1 and A01 formats)
+        // Area name mapping (supports both old and new ID formats)
         var areaNames = {
+            // Legacy format support
             'A1': 'Baltimore Coast',
             'A01': 'Baltimore Coast',
-            'A2': 'South East',
-            'A02': 'South East',
+            'A2': 'Raleigh',
+            'A02': 'Raleigh',
             'A3': 'New England',
             'A03': 'New England',
             'A4': 'New York',
@@ -734,6 +735,8 @@
             'A06': 'Gulf Coast',
             'A7': 'Florida',
             'A07': 'Florida',
+            'A8': 'Atlanta',
+            'A08': 'Atlanta',
             'B1': 'Chicago',
             'B01': 'Chicago',
             'B2': 'Michigan',
@@ -742,8 +745,8 @@
             'B03': 'Ohio Valley',
             'B4': 'Central Plains',
             'B04': 'Central Plains',
-            'B5': 'North Central',
-            'B05': 'North Central',
+            'B5': 'Minneapolis',
+            'B05': 'Minneapolis',
             'B6': 'Nashville',
             'B06': 'Nashville',
             'B7': 'St. Louis',
@@ -763,7 +766,34 @@
             'C6': 'Seattle',
             'C06': 'Seattle',
             'C7': 'Los Angeles',
-            'C07': 'Los Angeles'
+            'C07': 'Los Angeles',
+            'C8': 'Central Texas',
+            'C08': 'Central Texas',
+            // New SVG format
+            'A01_BaltimoreCoast': 'Baltimore Coast',
+            'A02_Raleigh': 'Raleigh',
+            'A03_NewEngland': 'New England',
+            'A04_NewYork': 'New York',
+            'A05_Philadelphia': 'Philadelphia',
+            'A06_GulfCoast': 'Gulf Coast',
+            'A07_Florida': 'Florida',
+            'A08_Atlanta': 'Atlanta',
+            'B01_Chicago': 'Chicago',
+            'B02_Michigan': 'Michigan',
+            'B03_OhioValley': 'Ohio Valley',
+            'B04_CentralPlains': 'Central Plains',
+            'B05_Minneapolis': 'Minneapolis',
+            'B06_Nashville': 'Nashville',
+            'B07_StLouis': 'St. Louis',
+            'B08_Tulsa': 'Tulsa',
+            'C01_Denver': 'Denver',
+            'C02_Dallas': 'Dallas',
+            'C03_Houston': 'Houston',
+            'C04_Phoenix': 'Phoenix',
+            'C05_NorthernCalifornia': 'Northern California',
+            'C06_Seattle': 'Seattle',
+            'C07_LosAngeles': 'Los Angeles',
+            'C08_CentralTexas': 'Central Texas'
         };
         
         // Load CSV data if available
@@ -1045,24 +1075,42 @@
             path.style.strokeWidth = '2px';
             
             // Extract region and area from path ID
-            // Path IDs are like "C06_Seattle", "B06_Nashville", "A01_Baltimore"
-            const parts = pathId.split('_');
-            if (parts.length < 2) return;
+            // Path IDs in new SVG are like "C06_Seattle", "B06_Nashville", "A01_BaltimoreCoast"
+            let areaCode, areaName, region;
             
-            const areaCode = parts[0]; // e.g., "C06"
-            const regionCode = areaCode.charAt(0); // e.g., "C"
-            const areaNameFromId = parts[1]; // e.g., "Seattle"
+            // First try the new format (full ID as key)
+            areaName = areaNames[pathId];
             
-            // Map to region names
-            const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
-            const region = regionMap[regionCode];
-            
-            // Get the area name from our mapping
-            const areaName = areaNames[areaCode];
             if (!areaName) {
-                // Fallback: extract from path ID and format it
-                const rawName = parts[1].replace(/_/g, ' ');
-                console.log('Area not found in mapping:', areaCode, 'Using:', rawName);
+                // Try extracting parts for legacy format
+                const parts = pathId.split('_');
+                if (parts.length >= 2) {
+                    areaCode = parts[0]; // e.g., "C06"
+                    const regionCode = areaCode.charAt(0); // e.g., "C"
+                    
+                    // Map to region names
+                    const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
+                    region = regionMap[regionCode];
+                    
+                    // Try legacy format lookup
+                    areaName = areaNames[areaCode];
+                    
+                    if (!areaName) {
+                        // Fallback: extract from path ID and format it
+                        const rawName = parts.slice(1).join(' ').replace(/([A-Z])/g, ' $1').trim();
+                        areaName = rawName;
+                        console.log('Area not found in mapping:', pathId, 'Using:', rawName);
+                    }
+                } else {
+                    console.error('Unable to parse path ID:', pathId);
+                    return;
+                }
+            } else {
+                // For new format, extract region from the ID
+                const regionCode = pathId.charAt(0);
+                const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
+                region = regionMap[regionCode];
+                areaCode = pathId.split('_')[0];
             }
             
             console.log('Area clicked:', { pathId, areaCode, areaName, region });
@@ -1230,7 +1278,7 @@
             console.log('🔍 Performing query:', { region, area, coverageType });
 
             // Check if SVG is available before trying to highlight
-            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            const svgObject = document.querySelector('object[data="./Artboard 1-3.svg"]');
             if (svgObject && svgObject.contentDocument) {
                 clearAllHighlights();
 
@@ -1272,7 +1320,7 @@
 
         // Clear all highlights from the map
         function clearAllHighlights() {
-            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            const svgObject = document.querySelector('object[data="./Artboard 1-3.svg"]');
             if (!svgObject) {
                 console.warn('⚠️ SVG object not found');
                 return;
@@ -1302,7 +1350,7 @@
 
         // Highlight all areas in a specific region
         function highlightRegion(region) {
-            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            const svgObject = document.querySelector('object[data="./Artboard 1-3.svg"]');
             if (!svgObject) {
                 console.warn('⚠️ SVG object not found for region highlighting');
                 return;
@@ -1329,7 +1377,7 @@
 
         // Highlight a specific area
         function highlightArea(region, area) {
-            const svgObject = document.querySelector('object[data="./Artboard 1.svg"]');
+            const svgObject = document.querySelector('object[data="./Artboard 1-3.svg"]');
             if (!svgObject) {
                 console.warn('⚠️ SVG object not found for area highlighting');
                 return;
@@ -1350,17 +1398,24 @@
                 const pathId = path.getAttribute('id');
                 if (!pathId) continue;
 
-                // Extract area code from path ID
-                const parts = pathId.split('_');
-                if (parts.length < 2) continue;
-                
-                const areaCode = parts[0];
-                
-                // Check if this area code maps to our selected area name
-                if (areaNames[areaCode] === area) {
+                // First check if the full path ID matches the area name
+                if (areaNames[pathId] === area) {
                     console.log(`🎯 Found matching area: ${pathId} for '${area}'`);
                     path.classList.add('selected');
                     break;
+                }
+                
+                // Also check legacy format
+                const parts = pathId.split('_');
+                if (parts.length >= 1) {
+                    const areaCode = parts[0];
+                    
+                    // Check if this area code maps to our selected area name
+                    if (areaNames[areaCode] === area) {
+                        console.log(`🎯 Found matching area: ${pathId} for '${area}'`);
+                        path.classList.add('selected');
+                        break;
+                    }
                 }
             }
         }

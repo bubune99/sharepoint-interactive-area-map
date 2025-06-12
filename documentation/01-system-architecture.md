@@ -2,31 +2,40 @@
 
 ## 🏗️ Overview
 
-The SharePoint Interactive Area Map is a comprehensive system that combines interactive geographic visualization with personnel management and analytics tracking. The system operates entirely within SharePoint using client-side technologies.
+The SharePoint Interactive Area Map uses a **lock-and-key template system** to work within SharePoint's dependency restrictions. Power Automate assembles a self-contained HTML file by injecting SVG content and personnel data into a template, creating a fully functional application without external dependencies.
 
-## 🔄 Data Flow Architecture
+## 🔄 Lock-and-Key Architecture
 
 ```mermaid
 graph TD
-    A[User Opens AreaMap.html] --> B[SVG Map Loads]
-    B --> C[Personnel CSV Loads]
-    C --> D[User Clicks Area]
-    D --> E[Query Personnel Data]
-    E --> F[Display Modal with Results]
-    F --> G[Log Click to AreaMapAnalytics.csv]
-    G --> H[Analytics Dashboard Reads CSV]
-    H --> I[Generate Charts & Insights]
+    A[SharePoint List Updates] --> B[Power Automate Triggered]
+    B --> C[Read Template HTML]
+    B --> D[Read SVG Content]
+    B --> E[Get Personnel Data]
+    C --> F[Replace Placeholders]
+    D --> F
+    E --> F
+    F --> G[Generate AreaMap.html]
+    G --> H[Deploy to SharePoint]
+    H --> I[Users Access Map]
+    I --> J[Analytics Logged]
 ```
 
 ## 📂 File Dependencies
 
-### Core Application Files
+### Template System Files
 ```
-AreaMap.html
-├── Loads → Artboard 1.svg (Interactive map)
-├── Reads → personnel_data.csv (Personnel information)
-├── Writes → AreaMapAnalytics.csv (Usage tracking)
-└── Stores → localStorage (Backup analytics)
+AreaMap-PowerAutomate-Template.html (Lock)
+├── {{SVG_CONTENT}} → Embedded from Artboard 1-3.svg
+├── {{PERSONNEL_DATA}} → Injected from SharePoint List
+├── {{AREA_NAMES}} → Updated mappings (A08, C08)
+└── All CSS/JS inline → No external dependencies
+
+Power Automate Flow (Key)
+├── Reads → Template + SVG + Personnel Data
+├── Processes → Placeholder replacement
+├── Outputs → AreaMap.html (self-contained)
+└── Triggers → On SharePoint list change
 ```
 
 ### Analytics System
@@ -39,39 +48,31 @@ analytics-dashboard.html
 
 ## 🔧 Technical Architecture
 
-### Frontend Components
+### Template Components
 
-#### 1. Interactive Map Engine
-- **Technology**: SVG + JavaScript
-- **Purpose**: Visual area selection interface
-- **Features**: 
-  - Click detection on geographic areas
-  - Visual feedback (hover, selection)
-  - Area code to region mapping
+#### 1. Template Placeholders
+- **{{SVG_CONTENT}}**: Complete SVG map with grouped areas
+- **{{PERSONNEL_DATA}}**: JSON array from SharePoint list
+- **{{TITLE}}**: Page title configuration
+- **{{ANALYTICS_FUNCTION}}**: Optional analytics code
 
-#### 2. Personnel Query System
-- **Technology**: Client-side CSV parsing
-- **Purpose**: Dynamic personnel lookup
-- **Features**:
-  - Primary/secondary area assignments
-  - Coverage type filtering
-  - Manager relationship display
+#### 2. Grouped Area Support
+- **New Areas**: A08 (Atlanta), C08 (Central Texas)
+- **Renamed**: B05 (Minneapolis, was North Central)
+- **Grouped Paths**: A04, B05, C06 handle multiple SVG paths
+- **Click Handler**: Automatically highlights all paths in group
 
-#### 3. Analytics Tracking Engine
-- **Technology**: JavaScript + LocalStorage + CSV
-- **Purpose**: Usage monitoring and insights
-- **Features**:
-  - Automatic click logging
-  - Session tracking
-  - Timestamp recording
+#### 3. Inline Architecture
+- **CSS**: All styles embedded in `<style>` tags
+- **JavaScript**: Complete functionality inline
+- **SVG**: Entire map embedded in HTML
+- **Data**: Personnel array injected directly
 
-#### 4. Dashboard Visualization
-- **Technology**: Chart.js + JavaScript
-- **Purpose**: Data visualization and insights
-- **Features**:
-  - Time-based analysis
-  - Interactive charts
-  - Multiple view options
+#### 4. Power Automate Integration
+- **Trigger**: SharePoint list changes or scheduled
+- **Actions**: Read files, transform data, write HTML
+- **Output**: Self-contained HTML file
+- **Deployment**: Direct to SharePoint document library
 
 ## 🗄️ Data Architecture
 
@@ -89,10 +90,37 @@ Timestamp,Date,Time,AreaCode,AreaName,Region,SessionId,UserAgent,URL
 
 ### Area Mapping Structure
 ```javascript
+// Updated for new SVG with 24 total areas
 {
-  'A1': 'Baltimore Coast',    // East Region
-  'B1': 'Chicago',           // Central Region  
-  'C1': 'Denver'             // West Region
+  // East Region (8 areas)
+  'A01': 'Baltimore Coast',
+  'A02': 'Raleigh',         // NEW (was South East)
+  'A03': 'New England',
+  'A04': 'New York',        // Has grouped paths
+  'A05': 'Philadelphia',
+  'A06': 'Gulf Coast',
+  'A07': 'Florida',
+  'A08': 'Atlanta',         // NEW
+  
+  // Central Region (8 areas)
+  'B01': 'Chicago',
+  'B02': 'Michigan',
+  'B03': 'Ohio Valley',
+  'B04': 'Central Plains',
+  'B05': 'Minneapolis',     // RENAMED, has grouped paths
+  'B06': 'Nashville',
+  'B07': 'St. Louis',
+  'B08': 'Tulsa',
+  
+  // West Region (8 areas)
+  'C01': 'Denver',
+  'C02': 'Dallas',
+  'C03': 'Houston',
+  'C04': 'Phoenix',
+  'C05': 'Northern California',
+  'C06': 'Seattle',         // May have grouped paths
+  'C07': 'Los Angeles',
+  'C08': 'Central Texas'    // NEW
 }
 ```
 

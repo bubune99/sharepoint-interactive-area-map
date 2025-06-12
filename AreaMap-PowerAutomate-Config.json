@@ -1,0 +1,493 @@
+{
+  "templateConfig": {
+    "templateFile": "AreaMap-PowerAutomate-Template.html",
+    "outputFile": "AreaMap-Generated.html",
+    "placeholders": {
+      "{{TITLE}}": {
+        "description": "Page title",
+        "defaultValue": "Area Map - Personnel Query",
+        "source": "static"
+      },
+      "{{HEADER_TITLE}}": {
+        "description": "Header bar title",
+        "defaultValue": "Interactive Area Map - Personnel Directory",
+        "source": "static"
+      },
+      "{{SVG_CONTENT}}": {
+        "description": "Complete SVG map content",
+        "source": "file",
+        "filePath": "Artboard 1-3.svg",
+        "transform": "embedSVG",
+        "cssClass": "svg-map"
+      },
+      "{{PERSONNEL_DATA}}": {
+        "description": "Personnel data array from SharePoint list",
+        "source": "sharepoint",
+        "listName": "Personnel",
+        "transform": "jsonArray",
+        "filter": "IncludeOnMap eq true",
+        "fields": [
+          "Title",
+          "UserEmail",
+          "UserDisplayName",
+          "FirstName",
+          "LastName",
+          "PreferredFirstName",
+          "UserDepartment",
+          "UserJobTitle",
+          "PrimaryAreaIDs",
+          "SecondaryAreaIDs",
+          "ManagerDisplayName",
+          "ManagerEmail",
+          "ManagerDepartment",
+          "ManagerJobTitle",
+          "ProfilePicture",
+          "IncludeOnMap",
+          "LastMapUpdate"
+        ]
+      },
+      "{{C08_AREA_NAME}}": {
+        "description": "Name for the new C08 area",
+        "defaultValue": "Central Texas",
+        "source": "static",
+        "updateWhenAvailable": false
+      },
+      "{{ANALYTICS_FUNCTION}}": {
+        "description": "Optional custom analytics code",
+        "defaultValue": "console.log('Analytics logged:', { areaCode, areaName, region, timestamp: new Date().toISOString() });",
+        "source": "conditional",
+        "condition": "enableAnalytics",
+        "trueValue": "// Custom analytics code can be added here",
+        "falseValue": "// No additional analytics"
+      },
+      "{{SITE_URL}}": {
+        "description": "SharePoint site URL for analytics persistence",
+        "source": "sharepoint",
+        "property": "webAbsoluteUrl",
+        "transform": "siteUrl"
+      }
+    }
+  },
+  "svgTransformation": {
+    "steps": [
+      {
+        "action": "removeXmlDeclaration",
+        "description": "Remove <?xml version...?> declaration"
+      },
+      {
+        "action": "addCssClass",
+        "class": "svg-map",
+        "description": "Add CSS class for styling"
+      },
+      {
+        "action": "ensureViewBox",
+        "description": "Ensure viewBox attribute is present"
+      },
+      {
+        "action": "validatePaths",
+        "description": "Ensure all paths have proper IDs"
+      }
+    ]
+  },
+  "dataTransformation": {
+    "personnelData": {
+      "splitDelimiter": ";",
+      "arrayFields": ["PrimaryAreaIDs", "SecondaryAreaIDs"],
+      "trimValues": true,
+      "filterEmpty": true
+    }
+  },
+  "powerAutomateFlow": {
+    "triggers": [
+      {
+        "type": "sharePointListModified",
+        "listName": "Personnel",
+        "description": "Trigger when map-relevant personnel data changes",
+        "triggerColumns": [
+          "Title",
+          "UserDisplayName", 
+          "FirstName",
+          "LastName",
+          "PreferredFirstName",
+          "UserJobTitle",
+          "PrimaryAreaIDs",
+          "SecondaryAreaIDs",
+          "ManagerDisplayName",
+          "ManagerEmail",
+          "IncludeOnMap"
+        ],
+        "excludeColumns": [
+          "TrainingAttendance",
+          "CertificationStatus",
+          "LastLoginDate",
+          "PersonalNotes",
+          "HRComments",
+          "EmergencyContact",
+          "Created",
+          "Modified",
+          "ID"
+        ],
+        "preActions": ["syncPendingAnalytics"],
+        "condition": "triggerCondition"
+      },
+      {
+        "type": "scheduled",
+        "frequency": "daily",
+        "time": "02:00",
+        "description": "Daily rebuild at 2 AM"
+      },
+      {
+        "type": "scheduled",
+        "frequency": "hourly",
+        "interval": 12,
+        "description": "Analytics sync every 12 hours",
+        "flowName": "AreaMap Analytics Sync"
+      }
+    ],
+    "actions": [
+      {
+        "step": 1,
+        "action": "getSharePointListItems",
+        "listName": "Personnel",
+        "select": "all fields"
+      },
+      {
+        "step": 2,
+        "action": "readFile",
+        "fileName": "AreaMap-PowerAutomate-Template.html"
+      },
+      {
+        "step": 3,
+        "action": "readFile",
+        "fileName": "Artboard 1-3.svg"
+      },
+      {
+        "step": 4,
+        "action": "transformData",
+        "transforms": [
+          "convertPersonnelToJSON",
+          "processSVGContent",
+          "replacePlaceholders"
+        ]
+      },
+      {
+        "step": 5,
+        "action": "writeFile",
+        "fileName": "AreaMap.html",
+        "overwrite": true
+      },
+      {
+        "step": 6,
+        "action": "updateVersion",
+        "description": "Update version metadata"
+      }
+    ]
+  },
+  "areaConfiguration": {
+    "regions": {
+      "East": {
+        "prefix": "A",
+        "areas": [
+          { "code": "A01", "name": "Baltimore Coast" },
+          { "code": "A02", "name": "Raleigh" },
+          { "code": "A03", "name": "New England" },
+          { "code": "A04", "name": "New York" },
+          { "code": "A05", "name": "Philadelphia" },
+          { "code": "A06", "name": "Gulf Coast" },
+          { "code": "A07", "name": "Florida" },
+          { "code": "A08", "name": "Atlanta" }
+        ]
+      },
+      "Central": {
+        "prefix": "B",
+        "areas": [
+          { "code": "B01", "name": "Chicago" },
+          { "code": "B02", "name": "Michigan" },
+          { "code": "B03", "name": "Ohio Valley" },
+          { "code": "B04", "name": "Central Plains" },
+          { "code": "B05", "name": "Minneapolis" },
+          { "code": "B06", "name": "Nashville" },
+          { "code": "B07", "name": "St. Louis" },
+          { "code": "B08", "name": "Tulsa" }
+        ]
+      },
+      "West": {
+        "prefix": "C",
+        "areas": [
+          { "code": "C01", "name": "Denver" },
+          { "code": "C02", "name": "Dallas" },
+          { "code": "C03", "name": "Houston" },
+          { "code": "C04", "name": "Phoenix" },
+          { "code": "C05", "name": "Northern California" },
+          { "code": "C06", "name": "Seattle" },
+          { "code": "C07", "name": "Los Angeles" },
+          { "code": "C08", "name": "Central Texas" }
+        ]
+      }
+    }
+  },
+  "analyticsConfiguration": {
+    "sharePointList": {
+      "name": "AreaMapAnalytics",
+      "description": "Persistent storage for area click analytics",
+      "columns": [
+        {
+          "name": "Title",
+          "type": "Single line of text",
+          "required": true,
+          "description": "Auto-generated title for click record"
+        },
+        {
+          "name": "ClickTimestamp", 
+          "type": "Date and Time",
+          "required": true,
+          "description": "Full timestamp of area click"
+        },
+        {
+          "name": "AreaCode",
+          "type": "Single line of text", 
+          "required": true,
+          "description": "Area identifier (A01, B05, C08, etc.)"
+        },
+        {
+          "name": "AreaName",
+          "type": "Single line of text",
+          "required": true,
+          "description": "Human-readable area name"
+        },
+        {
+          "name": "Region",
+          "type": "Choice",
+          "required": true,
+          "choices": ["East", "Central", "West"],
+          "description": "Geographic region"
+        },
+        {
+          "name": "SessionId",
+          "type": "Single line of text",
+          "required": false,
+          "description": "Browser session identifier"
+        },
+        {
+          "name": "UserAgent",
+          "type": "Multiple lines of text",
+          "required": false,
+          "description": "Browser and device information"
+        },
+        {
+          "name": "PageURL",
+          "type": "Hyperlink or Picture", 
+          "required": false,
+          "description": "URL where click occurred"
+        },
+        {
+          "name": "ClickDate",
+          "type": "Date Only",
+          "required": true,
+          "description": "Date portion for indexing and queries"
+        },
+        {
+          "name": "ClickHour",
+          "type": "Number",
+          "required": true,
+          "description": "Hour (0-23) for hourly analysis"
+        }
+      ],
+      "permissions": {
+        "read": ["Area Map Administrators", "Analytics Viewers"],
+        "write": ["Area Map System", "Power Automate Service"],
+        "fullControl": ["Site Administrators"]
+      }
+    },
+    "persistenceStrategy": {
+      "localBuffer": {
+        "maxItems": 1000,
+        "storageKey": "areaMapPendingClicks"
+      },
+      "syncSchedule": {
+        "interval": "12 hours",
+        "triggers": ["beforeRebuild", "bufferFull", "pageUnload"]
+      },
+      "backupMethods": ["sharePointList", "csvExport", "localStorage"]
+    }
+  },
+  "personnelListConfiguration": {
+    "listName": "Personnel",
+    "description": "Enhanced personnel list with selective visibility and rebuild triggers",
+    "columns": [
+      {
+        "name": "Title",
+        "type": "Single line of text",
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Full name for display"
+      },
+      {
+        "name": "UserEmail", 
+        "type": "Single line of text",
+        "required": true,
+        "triggerRebuild": false,
+        "description": "Primary email address"
+      },
+      {
+        "name": "UserDisplayName",
+        "type": "Single line of text", 
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Display name for personnel cards"
+      },
+      {
+        "name": "FirstName",
+        "type": "Single line of text",
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Legal first name"
+      },
+      {
+        "name": "LastName",
+        "type": "Single line of text",
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Legal last name"
+      },
+      {
+        "name": "PreferredFirstName",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": true,
+        "description": "Preferred name for display (overrides FirstName)"
+      },
+      {
+        "name": "UserDepartment",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Department or division"
+      },
+      {
+        "name": "UserJobTitle",
+        "type": "Single line of text",
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Current job title"
+      },
+      {
+        "name": "PrimaryAreaIDs",
+        "type": "Multiple lines of text",
+        "required": true,
+        "triggerRebuild": true,
+        "description": "Semicolon-separated area codes (A01;A02;C08)"
+      },
+      {
+        "name": "SecondaryAreaIDs",
+        "type": "Multiple lines of text",
+        "required": false,
+        "triggerRebuild": true,
+        "description": "Semicolon-separated backup area codes"
+      },
+      {
+        "name": "ManagerDisplayName",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": true,
+        "description": "Manager's full name"
+      },
+      {
+        "name": "ManagerEmail",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": true,
+        "description": "Manager's email address"
+      },
+      {
+        "name": "ManagerDepartment",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Manager's department"
+      },
+      {
+        "name": "ManagerJobTitle",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Manager's job title"
+      },
+      {
+        "name": "IncludeOnMap",
+        "type": "Yes/No",
+        "required": true,
+        "defaultValue": true,
+        "triggerRebuild": true,
+        "description": "Controls visibility on area map (unchecked for FMLA, extended PTO, etc.)"
+      },
+      {
+        "name": "LastMapUpdate",
+        "type": "Date and Time",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Timestamp of last map-related change (auto-updated)"
+      },
+      {
+        "name": "TrainingAttendance",
+        "type": "Multiple lines of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Training records and attendance (does not affect map)"
+      },
+      {
+        "name": "CertificationStatus",
+        "type": "Choice",
+        "required": false,
+        "triggerRebuild": false,
+        "choices": ["Current", "Expired", "Pending", "N/A"],
+        "description": "Current certification status (does not affect map)"
+      },
+      {
+        "name": "LastLoginDate",
+        "type": "Date and Time", 
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Last system login (tracking only)"
+      },
+      {
+        "name": "PersonalNotes",
+        "type": "Multiple lines of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Internal notes and comments (does not affect map)"
+      },
+      {
+        "name": "HRComments",
+        "type": "Multiple lines of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "HR-specific comments (does not affect map)"
+      },
+      {
+        "name": "EmergencyContact",
+        "type": "Single line of text",
+        "required": false,
+        "triggerRebuild": false,
+        "description": "Emergency contact information (does not affect map)"
+      }
+    ],
+    "rebuildTriggerLogic": {
+      "description": "Power Automate condition to determine when to rebuild map",
+      "condition": "OR(triggerColumns.hasChanges, IncludeOnMap.changed)",
+      "implementation": "if(or(triggerColumnsList), 'rebuild', 'skip')"
+    },
+    "visibilityControl": {
+      "filterField": "IncludeOnMap",
+      "filterValue": true,
+      "description": "Only personnel with IncludeOnMap=Yes appear on the map",
+      "useCases": [
+        "FMLA leave - set IncludeOnMap to No",
+        "Extended PTO - set IncludeOnMap to No", 
+        "Temporary reassignment - set IncludeOnMap to No",
+        "New hire onboarding - set IncludeOnMap to No until ready",
+        "Contractor vs Employee distinction"
+      ]
+    }
+  }
+}

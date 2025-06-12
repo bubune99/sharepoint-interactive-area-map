@@ -2,7 +2,7 @@
 
 ## 📍 Overview
 
-The AreaMap application (`AreaMap.html`) is the main user-facing interface that provides an interactive geographic map for personnel queries. Users can click on geographic areas to find personnel assignments and coverage information.
+The AreaMap application is generated from a template system using Power Automate. The template (`AreaMap-PowerAutomate-Template.html`) contains placeholders that are filled with SVG content and personnel data to create a self-contained HTML file that works within SharePoint's restrictions.
 
 ## 🎯 Core Features
 
@@ -21,43 +21,51 @@ The AreaMap application (`AreaMap.html`) is the main user-facing interface that 
 - **Detailed Personnel Cards**: Complete information with manager details
 - **Professional Styling**: SharePoint-compatible design theme
 
-## 🗺️ Geographic Structure
+## 🗺️ Geographic Structure (Updated)
 
 ### Regional Organization
 ```
-East Region (A-codes)
-├── A1: Baltimore Coast
-├── A2: South East  
-├── A3: New England
-├── A4: New York
-├── A5: Philadelphia
-├── A6: Gulf Coast
-└── A7: Florida
+East Region (A-codes) - 8 Areas
+├── A01: Baltimore Coast
+├── A02: Raleigh (NEW - was South East)
+├── A03: New England
+├── A04: New York (Has grouped paths: A04_NewYork + A04_NewYork-2)
+├── A05: Philadelphia
+├── A06: Gulf Coast
+├── A07: Florida
+└── A08: Atlanta (NEW)
 
-Central Region (B-codes)
-├── B1: Chicago
-├── B2: Michigan
-├── B3: Ohio Valley
-├── B4: Central Plains
-├── B5: North Central
-├── B6: Nashville
-├── B7: St. Louis
-└── B8: Tulsa
+Central Region (B-codes) - 8 Areas
+├── B01: Chicago
+├── B02: Michigan
+├── B03: Ohio Valley
+├── B04: Central Plains
+├── B05: Minneapolis (RENAMED - was North Central, has grouped paths)
+├── B06: Nashville
+├── B07: St. Louis
+└── B08: Tulsa
 
-West Region (C-codes)
-├── C1: Denver
-├── C2: Dallas
-├── C3: Houston
-├── C4: Phoenix
-├── C5: Northern California
-├── C6: Seattle
-└── C7: Los Angeles
+West Region (C-codes) - 8 Areas
+├── C01: Denver
+├── C02: Dallas
+├── C03: Houston
+├── C04: Phoenix
+├── C05: Northern California
+├── C06: Seattle (May have grouped paths with NorthernCalifornia)
+├── C07: Los Angeles
+└── C08: Central Texas (NEW)
 ```
 
-### Area Code Mapping
-The system supports both formats:
-- **Short Format**: A1, B2, C3
-- **Long Format**: A01, B02, C03
+### Grouped Areas Feature
+Some areas have multiple SVG paths that work as a single unit:
+- **A04 New York**: Includes A04_NewYork and A04_NewYork-2
+- **B05 Minneapolis**: Includes B05_Minneapolis and B05_Minneapolis-2
+- **C06 Seattle**: May include multiple paths
+
+When any path in a group is clicked:
+1. All paths in the group highlight together
+2. Personnel data shows for the entire area
+3. Analytics log the area code (not individual paths)
 
 ## 🔍 Query Interface
 
@@ -122,44 +130,37 @@ function createPersonCard(person, isModal) {
 
 ## 🔄 Application Logic Flow
 
-### 1. Initialization Sequence
+### 1. Template System
 ```javascript
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Load personnel data (CSV or SharePoint)
-    loadPersonnelData();
-    
-    // 2. Initialize map interactions
-    initializeMap();
-    
-    // 3. Setup event listeners
-    setupEventListeners();
-    
-    // 4. Perform initial query (show all)
-    performQuery();
-});
+// Power Automate fills these placeholders:
+const personnelData = {{PERSONNEL_DATA}};  // From SharePoint list
+// SVG content is embedded directly in HTML: {{SVG_CONTENT}}
 ```
 
-### 2. Map Interaction Flow
+### 2. Map Interaction with Grouped Areas
 ```javascript
-// Area click handling
+// Enhanced area click handling for grouped paths
 function handleAreaClick(event) {
     const pathId = event.target.getAttribute('id');
-    const [areaCode, areaName] = pathId.split('_');
     
-    // 1. Extract region from area code
-    const region = getRegionFromAreaCode(areaCode);
+    // Extract area code (handles A04_NewYork-2 format)
+    const areaMatch = pathId.match(/^([A-C]\d{2})/);
+    if (!areaMatch) return;
     
-    // 2. Update UI selections
-    updateDropdowns(region, areaName);
+    const areaCode = areaMatch[1];
     
-    // 3. Log analytics (automatic)
-    logAreaClick(areaCode, areaName, region);
+    // Clear all selections
+    document.querySelectorAll('.svg-map path.selected').forEach(p => {
+        p.classList.remove('selected');
+    });
     
-    // 4. Execute query
+    // Select all paths with same area code (grouped areas)
+    document.querySelectorAll(`.svg-map path[id^="${areaCode}_"]`).forEach(p => {
+        p.classList.add('selected');
+    });
+    
+    // Continue with query and display
     performQuery();
-    
-    // 5. Show results modal
-    showPersonnelModal(title, summary, results);
 }
 ```
 

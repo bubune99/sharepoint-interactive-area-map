@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITLE}}</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f6fc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        /* Header styles */
+        .sharepoint-header {
+            background-color: #0078d4;
+            color: white;
+            padding: 10px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+        }
+        .sharepoint-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        /* Map container styles */
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .svg-map {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* SVG Path Styles - Applied to inline SVG */
+        .svg-map path {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+        .svg-map path:hover {
+            opacity: 0.9;
+            filter: brightness(1.3) saturate(1.2);
+            transform: scale(1.02);
+            transform-origin: center;
+        }
+        .svg-map path.selected {
+            opacity: 1;
+            filter: brightness(1.4) saturate(1.5);
+            stroke: #0078d4;
+            stroke-width: 2px;
+            transform: scale(1.05);
+            transform-origin: center;
+        }
+        /* Query interface styles */
+        .controls-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        .control-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .control-input:focus {
+            border-color: #0078d4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+        }
+        /* Radio button styles */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .radio-label input[type="radio"] {
+            margin-right: 6px;
+            cursor: pointer;
+        }
+        /* Results styles */
+        .results-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+        .results-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .results-count {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .person-card {
+            background-color: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+        }
+        .profile-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .person-info {
+            flex: 1;
+        }
+        .person-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        .person-email {
+            color: #0078d4;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .person-title {
+            color: #666;
+            font-size: 14px;
+        }
+        .manager-info {
+            background-color: #f0f6fc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .manager-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .areas-info {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            pointer-events: none;
+            overflow-y: auto;
+        }
+        .modal-overlay.show {
+            right: 0;
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .modal-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .modal-close:hover {
+            opacity: 1;
+        }
+        .modal-content {
+            padding: 20px;
+        }
+        /* Coverage badge styles */
+        .coverage-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        .coverage-primary {
+            background-color: #d4f4dd;
+            color: #107c41;
+        }
+        .coverage-secondary {
+            background-color: #fef5d4;
+            color: #c87619;
+        }
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .modal-overlay {
+                width: 95%;
+                right: 10px;
+            }
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        /* Animation for pulse effect */
+        @keyframes pulse {
+            0% { filter: brightness(1.3) saturate(1.2); }
+            50% { filter: brightness(1.5) saturate(1.4); }
+            100% { filter: brightness(1.3) saturate(1.2); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sharepoint-header">
+            <span class="sharepoint-title">{{HEADER_TITLE}}</span>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <!-- SVG PLACEHOLDER - This is where Power Automate will inject the SVG content -->
+            {{SVG_CONTENT}}
+        </div>
+
+        <!-- Query Interface -->
+        <div class="controls-container">
+            <div class="control-group">
+                <label class="control-label" for="region-select">Region:</label>
+                <select id="region-select" class="control-input">
+                    <option value="">-- Select Region --</option>
+                    <option value="East">East</option>
+                    <option value="Central">Central</option>
+                    <option value="West">West</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" for="area-select">Area:</label>
+                <select id="area-select" class="control-input" disabled>
+                    <option value="">-- Select Area --</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Coverage Type:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="coverage" value="all" checked>
+                        All Coverage
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage" value="primary">
+                        Primary Only
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="coverage" value="secondary">
+                        Secondary Only
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div class="results-container" id="results-container" style="display: none;">
+            <div class="results-header">Query Results</div>
+            <div class="results-count" id="results-count"></div>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Area Personnel</h2>
+            <div class="modal-subtitle" id="modal-subtitle">Loading...</div>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-content" id="modal-content">
+            <!-- Personnel cards will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // POWER AUTOMATE DATA PLACEHOLDER - This is where personnel data will be injected
+        const personnelData = {{PERSONNEL_DATA}};
+
+        // Area name mappings - updated for new SVG
+        const areaNames = {
+            // East Region (A-codes)
+            'A1': 'Baltimore Coast', 'A01': 'Baltimore Coast',
+            'A2': 'Raleigh', 'A02': 'Raleigh',
+            'A3': 'New England', 'A03': 'New England',
+            'A4': 'New York', 'A04': 'New York',
+            'A5': 'Philadelphia', 'A05': 'Philadelphia',
+            'A6': 'Gulf Coast', 'A06': 'Gulf Coast',
+            'A7': 'Florida', 'A07': 'Florida',
+            'A8': 'Atlanta', 'A08': 'Atlanta', // New area
+            
+            // Central Region (B-codes)
+            'B1': 'Chicago', 'B01': 'Chicago',
+            'B2': 'Michigan', 'B02': 'Michigan',
+            'B3': 'Ohio Valley', 'B03': 'Ohio Valley',
+            'B4': 'Central Plains', 'B04': 'Central Plains',
+            'B5': 'Minneapolis', 'B05': 'Minneapolis', // Renamed from North Central
+            'B6': 'Nashville', 'B06': 'Nashville',
+            'B7': 'St. Louis', 'B07': 'St. Louis',
+            'B8': 'Tulsa', 'B08': 'Tulsa',
+            
+            // West Region (C-codes)
+            'C1': 'Denver', 'C01': 'Denver',
+            'C2': 'Dallas', 'C02': 'Dallas',
+            'C3': 'Houston', 'C03': 'Houston',
+            'C4': 'Phoenix', 'C04': 'Phoenix',
+            'C5': 'Northern California', 'C05': 'Northern California',
+            'C6': 'Seattle', 'C06': 'Seattle',
+            'C7': 'Los Angeles', 'C07': 'Los Angeles',
+            'C8': 'Central Texas', 'C08': 'Central Texas' // New area
+        };
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 AreaMap initializing...');
+            
+            // Set up SVG interactions
+            setupSVGInteractions();
+            
+            // Set up form event listeners
+            setupEventListeners();
+            
+            // Initialize area dropdown
+            updateAreaDropdown('');
+            
+            console.log('✅ AreaMap initialization complete');
+        });
+
+        // Set up SVG interactions (now works with inline SVG)
+        function setupSVGInteractions() {
+            console.log('🎯 Setting up SVG interactions...');
+            
+            // Find all path elements in the inline SVG
+            const paths = document.querySelectorAll('.svg-map path[id]');
+            console.log(`Found ${paths.length} interactive paths`);
+            
+            paths.forEach((path, index) => {
+                const pathId = path.getAttribute('id');
+                console.log(`Setting up path ${index}: ${pathId}`);
+                
+                // Add event listeners
+                path.addEventListener('click', handleAreaClick);
+                path.addEventListener('mouseenter', handleAreaHover);
+                path.addEventListener('mouseleave', handleAreaLeave);
+                
+                // Set initial styles
+                path.style.cursor = 'pointer';
+                path.style.transition = 'all 0.3s ease';
+            });
+        }
+
+        // Handle area click
+        function handleAreaClick(event) {
+            const path = event.target;
+            const pathId = path.getAttribute('id');
+            if (!pathId) return;
+            
+            console.log('Area clicked:', pathId);
+            
+            // Extract area code from path ID (handles grouped areas)
+            const areaMatch = pathId.match(/^([A-C]\d{2})/);
+            if (!areaMatch) return;
+            
+            const areaCode = areaMatch[1];
+            const regionCode = areaCode.charAt(0);
+            
+            // Clear all previous selections
+            document.querySelectorAll('.svg-map path.selected').forEach(p => {
+                p.classList.remove('selected');
+            });
+            
+            // Select all paths with the same area code (handles grouped areas)
+            document.querySelectorAll(`.svg-map path[id^="${areaCode}_"]`).forEach(p => {
+                p.classList.add('selected');
+            });
+            
+            // Map to region names
+            const regionMap = { 'A': 'East', 'B': 'Central', 'C': 'West' };
+            const region = regionMap[regionCode];
+            
+            // Get the area name
+            const areaName = areaNames[areaCode];
+            
+            if (region && areaName) {
+                // Log analytics if enabled
+                logAreaClick(areaCode, areaName, region);
+                
+                // Update dropdowns
+                document.getElementById('region-select').value = region;
+                updateAreaDropdown(region);
+                
+                setTimeout(() => {
+                    document.getElementById('area-select').value = areaName;
+                    performQuery();
+                }, 100);
+            }
+        }
+
+        // Handle area hover
+        function handleAreaHover(event) {
+            const path = event.target;
+            if (!path.classList.contains('selected')) {
+                path.style.opacity = '0.95';
+                path.style.filter = 'brightness(1.3) saturate(1.2)';
+                path.style.transform = 'scale(1.02)';
+            }
+        }
+
+        // Handle area leave
+        function handleAreaLeave(event) {
+            const path = event.target;
+            if (!path.classList.contains('selected')) {
+                path.style.opacity = '0.7';
+                path.style.filter = '';
+                path.style.transform = '';
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            const regionSelect = document.getElementById('region-select');
+            const areaSelect = document.getElementById('area-select');
+            
+            regionSelect.addEventListener('change', function() {
+                const region = this.value;
+                updateAreaDropdown(region);
+                performQuery();
+            });
+            
+            areaSelect.addEventListener('change', function() {
+                performQuery();
+            });
+            
+            // Radio button listeners
+            document.querySelectorAll('input[name="coverage"]').forEach(radio => {
+                radio.addEventListener('change', performQuery);
+            });
+        }
+
+        // Update area dropdown based on selected region
+        function updateAreaDropdown(region) {
+            const areaSelect = document.getElementById('area-select');
+            areaSelect.innerHTML = '<option value="">-- Select Area --</option>';
+            areaSelect.disabled = !region;
+            
+            if (!region) return;
+            
+            // Get areas for the selected region
+            const regionPrefixes = {
+                'East': 'A',
+                'Central': 'B',
+                'West': 'C'
+            };
+            
+            const prefix = regionPrefixes[region];
+            const areas = [];
+            
+            // Extract unique area names for the region
+            Object.entries(areaNames).forEach(([code, name]) => {
+                if (code.startsWith(prefix) && code.length === 2) {
+                    areas.push(name);
+                }
+            });
+            
+            // Remove duplicates and sort
+            const uniqueAreas = [...new Set(areas)].sort();
+            
+            uniqueAreas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area;
+                option.textContent = area;
+                areaSelect.appendChild(option);
+            });
+        }
+
+        // Perform personnel query
+        function performQuery() {
+            const region = document.getElementById('region-select').value;
+            const area = document.getElementById('area-select').value;
+            const coverageType = document.querySelector('input[name="coverage"]:checked').value;
+            
+            console.log('Performing query:', { region, area, coverageType });
+            
+            // Find matching personnel
+            const results = findMatchingPersonnel(region, area, coverageType);
+            
+            // Show results in modal
+            const title = area || region || 'All Areas';
+            const summary = `${results.length} personnel found`;
+            showPersonnelModal(title, summary, results);
+        }
+
+        // Find matching personnel based on criteria
+        function findMatchingPersonnel(region, area, coverageType) {
+            return personnelData.filter(person => {
+                const primaryAreas = person.PrimaryAreaIDs || [];
+                const secondaryAreas = person.SecondaryAreaIDs || [];
+                
+                // Get region prefix
+                const regionPrefixes = { 'East': 'A', 'Central': 'B', 'West': 'C' };
+                const regionPrefix = region ? regionPrefixes[region] : null;
+                
+                // Check matches
+                let primaryMatch = false;
+                let secondaryMatch = false;
+                
+                if (area) {
+                    // Specific area search
+                    const matchingAreaIds = Object.entries(areaNames)
+                        .filter(([code, name]) => name === area)
+                        .map(([code]) => code);
+                    
+                    primaryMatch = primaryAreas.some(id => matchingAreaIds.includes(id));
+                    secondaryMatch = secondaryAreas.some(id => matchingAreaIds.includes(id));
+                } else if (regionPrefix) {
+                    // Region-wide search
+                    primaryMatch = primaryAreas.some(id => id.startsWith(regionPrefix));
+                    secondaryMatch = secondaryAreas.some(id => id.startsWith(regionPrefix));
+                } else {
+                    // All areas
+                    primaryMatch = primaryAreas.length > 0;
+                    secondaryMatch = secondaryAreas.length > 0;
+                }
+                
+                // Filter by coverage type
+                switch(coverageType) {
+                    case 'primary': return primaryMatch;
+                    case 'secondary': return secondaryMatch;
+                    case 'all': return primaryMatch || secondaryMatch;
+                    default: return false;
+                }
+            });
+        }
+
+        // Show personnel modal
+        function showPersonnelModal(title, summary, results) {
+            const modal = document.getElementById('modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalSubtitle = document.getElementById('modal-subtitle');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalTitle.textContent = title;
+            modalSubtitle.textContent = summary;
+            
+            // Build content
+            let content = '';
+            if (results.length === 0) {
+                content = '<div style="text-align: center; padding: 40px; color: #666;">No personnel found for the selected criteria.</div>';
+            } else {
+                results.forEach(person => {
+                    content += createPersonCard(person, true);
+                });
+            }
+            
+            modalContent.innerHTML = content;
+            modal.classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.remove('show');
+        }
+
+        // Create person card HTML
+        function createPersonCard(person, isModal) {
+            const profileImg = person.ProfilePicture || 
+                `/_layouts/15/userphoto.aspx?size=M&accountname=${person.UserEmail}` ||
+                'https://via.placeholder.com/50';
+            
+            const displayName = person.PreferredFirstName || person.FirstName;
+            const fullName = person.Title || `${person.FirstName} ${person.LastName}`;
+            
+            // Determine coverage type
+            const primaryAreas = person.PrimaryAreaIDs || [];
+            const secondaryAreas = person.SecondaryAreaIDs || [];
+            const isPrimary = primaryAreas.length > 0;
+            const isSecondary = secondaryAreas.length > 0;
+            
+            let coverageBadge = '';
+            if (isPrimary && isSecondary) {
+                coverageBadge = '<span class="coverage-badge coverage-primary">Primary</span><span class="coverage-badge coverage-secondary">Secondary</span>';
+            } else if (isPrimary) {
+                coverageBadge = '<span class="coverage-badge coverage-primary">Primary</span>';
+            } else if (isSecondary) {
+                coverageBadge = '<span class="coverage-badge coverage-secondary">Secondary</span>';
+            }
+            
+            let html = `
+                <div class="person-card ${isModal ? 'modal-card' : ''}">
+                    <img src="${profileImg}" class="profile-image" alt="${fullName}" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="person-info">
+                        <div class="person-name">${fullName}${coverageBadge}</div>
+                        <div class="person-email">${person.UserEmail}</div>
+                        <div class="person-title">${person.UserJobTitle}</div>
+                        ${person.UserDepartment ? `<div class="person-department">${person.UserDepartment}</div>` : ''}
+            `;
+            
+            // Add manager info if available
+            if (person.ManagerDisplayName) {
+                html += `
+                    <div class="manager-info">
+                        <div class="manager-label">Manager:</div>
+                        <div>${person.ManagerDisplayName}</div>
+                        ${person.ManagerEmail ? `<div style="font-size: 12px; color: #666;">${person.ManagerEmail}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Add area assignments
+            if (isModal && (primaryAreas.length > 0 || secondaryAreas.length > 0)) {
+                html += '<div class="areas-info">';
+                if (primaryAreas.length > 0) {
+                    const primaryNames = primaryAreas.map(id => areaNames[id] || id).join(', ');
+                    html += `<div><strong>Primary Areas:</strong> ${primaryNames}</div>`;
+                }
+                if (secondaryAreas.length > 0) {
+                    const secondaryNames = secondaryAreas.map(id => areaNames[id] || id).join(', ');
+                    html += `<div><strong>Secondary Areas:</strong> ${secondaryNames}</div>`;
+                }
+                html += '</div>';
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        // Enhanced Analytics with Persistence
+        const ANALYTICS_CONFIG = {
+            maxLocalStorage: 1000,
+            syncInterval: 12 * 60 * 60 * 1000, // 12 hours
+            lastSyncKey: 'areaMapLastSync',
+            pendingDataKey: 'areaMapPendingClicks',
+            sharePointListName: 'AreaMapAnalytics',
+            siteUrl: '{{SITE_URL}}' // Power Automate placeholder
+        };
+
+        function logAreaClick(areaCode, areaName, region) {
+            const clickData = {
+                id: generateClickId(),
+                timestamp: new Date().toISOString(),
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().split(' ')[0],
+                hour: new Date().getHours(),
+                areaCode: areaCode,
+                areaName: areaName,
+                region: region,
+                sessionId: generateSessionId(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            };
+            
+            addToLocalBuffer(clickData);
+            checkSyncThreshold();
+            
+            // Optional custom analytics code
+            {{ANALYTICS_FUNCTION}}
+        }
+
+        function addToLocalBuffer(clickData) {
+            try {
+                let pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
+                pendingClicks.push(clickData);
+                
+                if (pendingClicks.length > ANALYTICS_CONFIG.maxLocalStorage) {
+                    syncToSharePoint();
+                } else {
+                    localStorage.setItem(ANALYTICS_CONFIG.pendingDataKey, JSON.stringify(pendingClicks));
+                }
+            } catch (error) {
+                console.error('Error adding to local buffer:', error);
+            }
+        }
+
+        function checkSyncThreshold() {
+            const lastSync = localStorage.getItem(ANALYTICS_CONFIG.lastSyncKey);
+            const now = Date.now();
+            
+            if (!lastSync || (now - parseInt(lastSync)) > ANALYTICS_CONFIG.syncInterval) {
+                syncToSharePoint();
+            }
+        }
+
+        async function syncToSharePoint() {
+            try {
+                const pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
+                
+                if (pendingClicks.length === 0) return;
+                
+                console.log(`Syncing ${pendingClicks.length} clicks to SharePoint...`);
+                
+                if (typeof _spPageContextInfo !== 'undefined') {
+                    await batchUploadToSharePoint(pendingClicks);
+                    localStorage.removeItem(ANALYTICS_CONFIG.pendingDataKey);
+                    localStorage.setItem(ANALYTICS_CONFIG.lastSyncKey, Date.now().toString());
+                    console.log('✅ Analytics sync completed');
+                } else {
+                    console.warn('SharePoint context not available - keeping data for later sync');
+                }
+                
+            } catch (error) {
+                console.error('❌ Analytics sync failed:', error);
+            }
+        }
+
+        async function batchUploadToSharePoint(clicksArray) {
+            const url = `${ANALYTICS_CONFIG.siteUrl}/_api/web/lists/getbytitle('${ANALYTICS_CONFIG.sharePointListName}')/items`;
+            
+            for (const click of clicksArray) {
+                const itemData = {
+                    '__metadata': { 'type': 'SP.Data.AreaMapAnalyticsListItem' },
+                    'Title': `Click-${click.areaCode}-${click.timestamp}`,
+                    'ClickTimestamp': click.timestamp,
+                    'AreaCode': click.areaCode,
+                    'AreaName': click.areaName,
+                    'Region': click.region,
+                    'SessionId': click.sessionId,
+                    'UserAgent': click.userAgent,
+                    'PageURL': click.url,
+                    'ClickDate': click.date,
+                    'ClickHour': click.hour
+                };
+                
+                await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose',
+                        'X-RequestDigest': document.getElementById('__REQUESTDIGEST').value
+                    },
+                    body: JSON.stringify(itemData)
+                });
+            }
+        }
+
+        function generateClickId() {
+            return 'click_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Auto-sync before page unload
+        window.addEventListener('beforeunload', function() {
+            const pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
+            if (pendingClicks.length > 0) {
+                // Emergency sync attempt
+                syncToSharePoint();
+            }
+        });
+
+        // Initialize sync check on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSyncThreshold();
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Click outside modal to close
+        document.getElementById('modal-overlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

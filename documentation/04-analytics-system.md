@@ -2,50 +2,91 @@
 
 ## 📊 Overview
 
-The Analytics System provides comprehensive usage tracking for the AreaMap application. It automatically captures user interactions, stores data in multiple formats, and enables detailed analysis of system usage patterns. The system operates transparently without requiring user intervention.
+The Analytics System provides comprehensive usage tracking with a robust persistence strategy that survives HTML rebuilds. Using a hybrid storage approach with SharePoint list persistence and localStorage buffering, all analytics data is preserved when the template system regenerates AreaMap.html.
 
-## 🔄 Data Collection Flow
+## 🔄 Enhanced Data Collection Flow
 
 ```mermaid
 graph TD
     A[User Clicks Area] --> B[Extract Area Information]
     B --> C[Generate Analytics Record]
-    C --> D[Write to AreaMapAnalytics.csv]
-    D --> E[Backup to localStorage]
-    E --> F[Analytics Dashboard Reads Data]
-    F --> G[Generate Insights & Charts]
+    C --> D[Store in localStorage Buffer]
+    D --> E[Check Sync Threshold]
+    E --> F{12 Hours Passed?}
+    F -->|Yes| G[Sync to SharePoint List]
+    F -->|No| H[Continue Buffering]
+    G --> I[Clear localStorage Buffer]
+    H --> J[Analytics Dashboard Reads Combined Data]
+    I --> J
+    J --> K[Generate Insights & Charts]
+    
+    L[Personnel List Change] --> M[Pre-Rebuild Sync Check]
+    M --> N[Emergency Sync to SharePoint]
+    N --> O[Rebuild HTML Template]
+    O --> P[Analytics Persist Across Rebuild]
 ```
 
 ## 📋 Analytics Data Schema
 
-### Primary Data Structure
-```csv
-Timestamp,Date,Time,AreaCode,AreaName,Region,SessionId,UserAgent,URL
-```
+### SharePoint Analytics List Structure
+The primary storage is a SharePoint list called "AreaMapAnalytics" with the following columns:
 
-### Field Definitions
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| `Title` | Single line of text | Yes | Auto-generated title for click record |
+| `ClickTimestamp` | Date and Time | Yes | Full timestamp of area click |
+| `AreaCode` | Single line of text | Yes | Area identifier (A01, B05, C08, etc.) |
+| `AreaName` | Single line of text | Yes | Human-readable area name |
+| `Region` | Choice | Yes | Geographic region (East, Central, West) |
+| `SessionId` | Single line of text | No | Browser session identifier |
+| `UserAgent` | Multiple lines of text | No | Browser and device information |
+| `PageURL` | Hyperlink or Picture | No | URL where click occurred |
+| `ClickDate` | Date Only | Yes | Date portion for indexing and queries |
+| `ClickHour` | Number | Yes | Hour (0-23) for hourly analysis |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `Timestamp` | ISO DateTime | Full timestamp with timezone | 2024-01-15T10:30:00.000Z |
-| `Date` | Date | Date portion only | 2024-01-15 |
-| `Time` | Time | Time portion only | 10:30:00 |
-| `AreaCode` | String | Geographic area identifier | A1, B2, C3 |
-| `AreaName` | String | Human-readable area name | Baltimore Coast |
-| `Region` | String | Geographic region | East, Central, West |
-| `SessionId` | String | Unique session identifier | session_1705317000_abc123 |
-| `UserAgent` | String | Browser/device information | Mozilla/5.0... |
-| `URL` | String | Page URL where click occurred | https://site.sharepoint.com/... |
+### localStorage Buffer Structure
+```json
+{
+  "id": "click_1705317000_abc123",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "date": "2024-01-15",
+  "time": "10:30:00",
+  "hour": 10,
+  "areaCode": "A08",
+  "areaName": "Atlanta",
+  "region": "East",
+  "sessionId": "session_1705317000_def456",
+  "userAgent": "Mozilla/5.0...",
+  "url": "https://site.sharepoint.com/..."
+}
 
-## 🔧 Implementation Details
+## 🔧 Persistence Strategy Implementation
 
-### Click Logging Function
+### Hybrid Storage Architecture
+The analytics system uses a three-tier approach to ensure data survival across template rebuilds:
+
+1. **Primary Storage**: SharePoint Analytics List (permanent)
+2. **Secondary Storage**: localStorage Buffer (fast, 12-hour cycles)
+3. **Tertiary Storage**: CSV Export (backup compatibility)
+
+### Enhanced Analytics Function
 ```javascript
+const ANALYTICS_CONFIG = {
+    maxLocalStorage: 1000,
+    syncInterval: 12 * 60 * 60 * 1000, // 12 hours
+    lastSyncKey: 'areaMapLastSync',
+    pendingDataKey: 'areaMapPendingClicks',
+    sharePointListName: 'AreaMapAnalytics',
+    siteUrl: '{{SITE_URL}}' // Power Automate placeholder
+};
+
 function logAreaClick(areaCode, areaName, region) {
     const clickData = {
+        id: generateClickId(),
         timestamp: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().split(' ')[0],
+        hour: new Date().getHours(),
         areaCode: areaCode,
         areaName: areaName,
         region: region,
@@ -54,13 +95,24 @@ function logAreaClick(areaCode, areaName, region) {
         url: window.location.href
     };
     
-    // Save to localStorage for analytics dashboard
-    appendToLocalStorage(clickData);
+    addToLocalBuffer(clickData);
+    checkSyncThreshold();
     
-    // Automatically write to CSV file (for admin use)
-    writeToCSVFile(clickData);
+    // Optional custom analytics code
+    {{ANALYTICS_FUNCTION}}
+}
+```
+
+### Grouped Areas Handling
+```javascript
+// Analytics logs the base area code, not individual paths
+function handleAreaClick(event) {
+    const pathId = event.target.getAttribute('id');
+    const areaMatch = pathId.match(/^([A-C]\d{2})/);
+    const areaCode = areaMatch[1];  // A04 for both A04_NewYork and A04_NewYork-2
     
-    console.log('Click logged:', clickData);
+    // Log once per area, not per path
+    logAreaClick(areaCode, areaName, region);
 }
 ```
 
@@ -91,121 +143,172 @@ function writeToCSVFile(clickData) {
 }
 ```
 
-## 📁 Data Storage Strategy
+## 📁 Multi-Tier Storage Strategy
 
-### Primary Storage: AreaMapAnalytics.csv
-- **Location**: Same directory as AreaMap.html
-- **Format**: Standard CSV with headers
-- **Access**: Admin read/write, application append
-- **Persistence**: Permanent file-based storage
+### Primary Storage: SharePoint Analytics List
+- **List Name**: AreaMapAnalytics
+- **Location**: Same SharePoint site as Personnel list
+- **Persistence**: Permanent, survives HTML rebuilds
+- **Access**: Power Automate read/write, frontend sync access
+- **Capacity**: Enterprise-scale (millions of records)
 
-### Backup Storage: localStorage
-- **Purpose**: Fallback and dashboard integration
-- **Capacity**: Limited to ~5MB browser storage
-- **Retention**: Browser-dependent (cleared on cache clear)
-- **Management**: Automatic rotation after 1000 records
+### Secondary Storage: localStorage Buffer
+- **Purpose**: Fast local buffer for immediate click capture
+- **Capacity**: 1000 items max (auto-rotation)
+- **Sync Frequency**: Every 12 hours or before rebuild
+- **Management**: Automatic cleanup after successful sync
 
-### Storage Implementation
+### Local Buffer Implementation
 ```javascript
-function appendToLocalStorage(clickData) {
+function addToLocalBuffer(clickData) {
     try {
-        let clickLog = JSON.parse(localStorage.getItem('areaMapClickLog') || '[]');
-        clickLog.push(clickData);
+        let pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
+        pendingClicks.push(clickData);
         
-        // Keep only last 1000 records to prevent overflow
-        if (clickLog.length > 1000) {
-            clickLog = clickLog.slice(-1000);
+        if (pendingClicks.length > ANALYTICS_CONFIG.maxLocalStorage) {
+            syncToSharePoint();
+        } else {
+            localStorage.setItem(ANALYTICS_CONFIG.pendingDataKey, JSON.stringify(pendingClicks));
         }
-        
-        localStorage.setItem('areaMapClickLog', JSON.stringify(clickLog));
-    } catch (e) {
-        console.log('Could not save to localStorage:', e);
+    } catch (error) {
+        console.error('Error adding to local buffer:', error);
+    }
+}
+
+function checkSyncThreshold() {
+    const lastSync = localStorage.getItem(ANALYTICS_CONFIG.lastSyncKey);
+    const now = Date.now();
+    
+    if (!lastSync || (now - parseInt(lastSync)) > ANALYTICS_CONFIG.syncInterval) {
+        syncToSharePoint();
     }
 }
 ```
 
-## 🔒 SharePoint Integration
+## 🔒 SharePoint List Integration
 
-### REST API Implementation
+### Sync to SharePoint Implementation
 ```javascript
-function appendToSharePointCSV(csvUrl, csvRow) {
-    // First, get the current CSV content
-    fetch(csvUrl, {
-        method: 'GET',
-        headers: { 'Accept': 'text/plain' }
-    })
-    .then(response => response.text())
-    .then(currentContent => {
-        // Append new row
-        const updatedContent = currentContent.trim() + '\\n' + csvRow;
+async function syncToSharePoint() {
+    try {
+        const pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
         
-        // Update the file using SharePoint REST API
-        const fileUrl = _spPageContextInfo.webAbsoluteUrl + 
-            "/_api/web/getfilebyserverrelativeurl('" + 
-            csvUrl.replace(_spPageContextInfo.webAbsoluteUrl, '') + 
-            "')/\\$value";
+        if (pendingClicks.length === 0) return;
         
-        return fetch(fileUrl, {
+        console.log(`Syncing ${pendingClicks.length} clicks to SharePoint...`);
+        
+        if (typeof _spPageContextInfo !== 'undefined') {
+            await batchUploadToSharePoint(pendingClicks);
+            localStorage.removeItem(ANALYTICS_CONFIG.pendingDataKey);
+            localStorage.setItem(ANALYTICS_CONFIG.lastSyncKey, Date.now().toString());
+            console.log('✅ Analytics sync completed');
+        } else {
+            console.warn('SharePoint context not available - keeping data for later sync');
+        }
+        
+    } catch (error) {
+        console.error('❌ Analytics sync failed:', error);
+    }
+}
+
+async function batchUploadToSharePoint(clicksArray) {
+    const url = `${ANALYTICS_CONFIG.siteUrl}/_api/web/lists/getbytitle('${ANALYTICS_CONFIG.sharePointListName}')/items`;
+    
+    for (const click of clicksArray) {
+        const itemData = {
+            '__metadata': { 'type': 'SP.Data.AreaMapAnalyticsListItem' },
+            'Title': `Click-${click.areaCode}-${click.timestamp}`,
+            'ClickTimestamp': click.timestamp,
+            'AreaCode': click.areaCode,
+            'AreaName': click.areaName,
+            'Region': click.region,
+            'SessionId': click.sessionId,
+            'UserAgent': click.userAgent,
+            'PageURL': click.url,
+            'ClickDate': click.date,
+            'ClickHour': click.hour
+        };
+        
+        await fetch(url, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json;odata=verbose',
-                'X-RequestDigest': document.getElementById('__REQUESTDIGEST').value,
-                'X-HTTP-Method': 'PUT',
-                'Content-Type': 'text/plain'
+                'Content-Type': 'application/json;odata=verbose',
+                'X-RequestDigest': document.getElementById('__REQUESTDIGEST').value
             },
-            body: updatedContent
+            body: JSON.stringify(itemData)
         });
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log('✅ Successfully appended to AreaMapAnalytics.csv');
-        } else {
-            console.error('❌ Failed to append to CSV:', response.statusText);
-        }
-    })
-    .catch(error => {
-        console.error('❌ Error appending to CSV:', error);
-        storeForRetry(csvRow);
-    });
-}
-```
-
-### Error Handling & Retry Logic
-```javascript
-function storeForRetry(csvRow) {
-    try {
-        let failedWrites = JSON.parse(localStorage.getItem('failedCSVWrites') || '[]');
-        failedWrites.push({
-            timestamp: new Date().toISOString(),
-            csvRow: csvRow
-        });
-        localStorage.setItem('failedCSVWrites', JSON.stringify(failedWrites));
-        console.log('📝 Stored failed write for retry');
-    } catch (e) {
-        console.error('Failed to store for retry:', e);
     }
 }
 ```
 
-## 📊 Data Analytics Capabilities
+### Pre-Rebuild Data Preservation
+```javascript
+// Auto-sync before page unload
+window.addEventListener('beforeunload', function() {
+    const pendingClicks = JSON.parse(localStorage.getItem(ANALYTICS_CONFIG.pendingDataKey) || '[]');
+    if (pendingClicks.length > 0) {
+        // Emergency sync attempt
+        syncToSharePoint();
+    }
+});
 
-### Real-time Metrics
-- **Click Count**: Total area clicks across all sessions
-- **Popular Areas**: Most frequently clicked geographic areas
-- **Regional Distribution**: Click distribution across East/Central/West
-- **Session Tracking**: Unique user sessions and engagement
+// Initialize sync check on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkSyncThreshold();
+});
+```
 
-### Time-based Analysis
-- **Hourly Patterns**: Peak usage hours (0:00-23:00)
-- **Daily Trends**: Day-over-day usage patterns
-- **Weekly Cycles**: Weekly usage cycles
-- **Monthly Reports**: Long-term usage trends
+### Power Automate Integration
+The Personnel list change trigger includes a pre-action to sync analytics:
 
-### Geographic Insights
-- **Area Popularity**: Ranking of most accessed areas
-- **Regional Balance**: Usage distribution across regions
-- **Coverage Analysis**: Areas with high vs low engagement
-- **Geographic Hotspots**: Identify areas of high interest
+```json
+{
+  "trigger": {
+    "type": "sharePointListModified",
+    "listName": "Personnel",
+    "preActions": ["syncPendingAnalytics"]
+  },
+  "actions": [
+    {
+      "step": 1,
+      "action": "syncAnalyticsToSharePoint",
+      "description": "Save any pending analytics before rebuild"
+    },
+    {
+      "step": 2,
+      "action": "rebuildAreaMapTemplate",
+      "description": "Generate new HTML with updated personnel data"
+    }
+  ]
+}
+```
+
+## 📊 Analytics with New Areas
+
+### Updated Geographic Tracking
+- **24 Total Areas**: 8 per region (East, Central, West)
+- **New Areas**: A08 (Atlanta), C08 (Central Texas)
+- **Renamed Areas**: B05 (Minneapolis, was North Central)
+- **Grouped Areas**: A04, B05, C06 tracked as single units
+
+### Enhanced Regional Insights
+- **East Region**: A01-A08 (Baltimore Coast to Atlanta)
+- **Central Region**: B01-B08 (Chicago to Tulsa)
+- **West Region**: C01-C08 (Denver to Central Texas)
+
+### Grouped Area Analytics
+```javascript
+// Track grouped areas as single entities
+function getAreaGroup(pathId) {
+    return pathId.match(/^([A-C]\d{2})/)[1];  // Returns A04, B05, etc.
+}
+
+// Analytics aggregates all clicks for grouped paths
+const groupedClicks = analyticsData.filter(click => 
+    click.AreaCode === 'A04'  // Includes both A04_NewYork and A04_NewYork-2
+);
+```
 
 ## 🔄 Data Processing Pipeline
 
@@ -339,6 +442,72 @@ function getEnvironmentConfig() {
 - **Caching**: Reduce redundant API calls
 - **Offline Support**: Queue operations when network unavailable
 
+## 🔄 Analytics Dashboard Updates
+
+### Data Source Priority
+1. **Primary**: SharePoint Analytics List (complete historical data)
+2. **Secondary**: localStorage Buffer (current session)
+3. **Fallback**: CSV export (legacy compatibility)
+
+### Dashboard Loading Logic
+```javascript
+async function loadAnalyticsData() {
+    try {
+        // Try SharePoint Analytics List first
+        const sharePointData = await loadFromSharePointAnalytics();
+        if (sharePointData && sharePointData.length > 0) {
+            return sharePointData;
+        }
+        
+        // Fallback to localStorage
+        return loadFromLocalStorage();
+        
+    } catch (error) {
+        console.error('Error loading analytics data:', error);
+        return [];
+    }
+}
+
+async function loadFromSharePointAnalytics() {
+    const url = `${siteUrl}/_api/web/lists/getbytitle('AreaMapAnalytics')/items?$top=5000&$orderby=ClickTimestamp desc`;
+    
+    const response = await fetch(url, {
+        headers: { 'Accept': 'application/json;odata=verbose' }
+    });
+    
+    const data = await response.json();
+    return data.d.results.map(item => ({
+        timestamp: item.ClickTimestamp,
+        areaCode: item.AreaCode,
+        areaName: item.AreaName,
+        region: item.Region,
+        sessionId: item.SessionId,
+        date: item.ClickDate,
+        hour: item.ClickHour
+    }));
+}
+```
+
+## 🛡️ Data Safety Features
+
+### Backup Strategies
+1. **Real-time**: localStorage buffer (1000 items max)
+2. **Periodic**: 12-hour sync to SharePoint list
+3. **Pre-rebuild**: Emergency sync before template regeneration
+4. **Cross-browser**: SharePoint persistence survives cache clears
+
+### Error Handling
+- Failed syncs keep data in localStorage for retry
+- SharePoint list provides permanent fallback
+- Data validation before upload prevents corruption
+- Graceful degradation if SharePoint unavailable
+
+### Performance Optimization
+- Batch uploads (configurable size limits)
+- Asynchronous processing (non-blocking UI)
+- Local buffer prevents API overload
+- Indexed SharePoint columns for fast queries
+
 ---
 
-*The Analytics System provides comprehensive, privacy-compliant usage tracking with robust data storage and real-time insights for informed decision-making.*
+*The Enhanced Analytics System provides robust, rebuild-resistant usage tracking with enterprise-grade persistence and comprehensive backup strategies for reliable data collection.*
