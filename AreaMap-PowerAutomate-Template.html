@@ -383,11 +383,11 @@
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="coverage" value="primary">
-                            Primary Only
+                            Primary Support Only
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="coverage" value="secondary">
-                            Secondary Only
+                            Secondary Support Only
                         </label>
                     </div>
                 </div>
@@ -562,6 +562,10 @@
             // Clear all previous selections
             document.querySelectorAll('.svg-map path.selected').forEach(p => {
                 p.classList.remove('selected');
+                // Reset inline styles to ensure proper animation reset
+                p.style.opacity = '0.7';
+                p.style.filter = '';
+                p.style.transform = '';
             });
             
             // Select all paths with the same area code (handles grouped areas)
@@ -1119,11 +1123,11 @@
             
             let coverageBadge = '';
             if (isPrimary && isSecondary) {
-                coverageBadge = '<span class="coverage-badge coverage-primary">Primary</span><span class="coverage-badge coverage-secondary">Secondary</span>';
+                coverageBadge = '<span class="coverage-badge coverage-primary">Primary Support</span><span class="coverage-badge coverage-secondary">Secondary Support</span>';
             } else if (isPrimary) {
-                coverageBadge = '<span class="coverage-badge coverage-primary">Primary</span>';
+                coverageBadge = '<span class="coverage-badge coverage-primary">Primary Support</span>';
             } else if (isSecondary) {
-                coverageBadge = '<span class="coverage-badge coverage-secondary">Secondary</span>';
+                coverageBadge = '<span class="coverage-badge coverage-secondary">Secondary Support</span>';
             }
             
             let html = `
@@ -1132,8 +1136,7 @@
                     <div class="person-info">
                         <div class="person-name">${fullName}${coverageBadge}</div>
                         <div class="person-email">${person.UserEmail}</div>
-                        <div class="person-title">${person.UserJobTitle}</div>
-                        ${person.UserDepartment ? `<div class="person-department">${person.UserDepartment}</div>` : ''}
+                        <div class="person-title">${person.UserJobTitle} - ${person.UserDepartment}</div>
             `;
             
             // Add manager info if available
@@ -1191,10 +1194,10 @@
                 
                 // Display EPC clients
                 if (primaryEPCClients.length > 0) {
-                    html += `<div><strong>Primary EPC Clients:</strong> ${primaryEPCClients.join(', ')}</div>`;
+                    html += `<div><strong>Primary Support:</strong> ${primaryEPCClients.join(', ')}</div>`;
                 }
                 if (secondaryEPCClients.length > 0) {
-                    html += `<div><strong>Secondary EPC Clients:</strong> ${secondaryEPCClients.join(', ')}</div>`;
+                    html += `<div><strong>Secondary Support:</strong> ${secondaryEPCClients.join(', ')}</div>`;
                 }
                 
                 html += '</div>';

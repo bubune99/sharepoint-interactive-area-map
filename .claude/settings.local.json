@@ -10,7 +10,12 @@
       "Bash(./build-areamap.sh:*)",
       "Bash(chmod:*)",
       "Bash(open test-search.html)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "mcp__ide__executeCode",
+      "Bash(python3:*)",
+      "Bash(rm:*)",
+      "Bash(./build-cae-areamap.sh:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
