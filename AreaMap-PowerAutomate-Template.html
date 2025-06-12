@@ -112,6 +112,52 @@
             margin-right: 6px;
             cursor: pointer;
         }
+        /* Search button styles */
+        .search-button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
+        }
+        .search-button:hover {
+            background: linear-gradient(135deg, #106ebe 0%, #005a9e 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 120, 212, 0.4);
+        }
+        .search-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 120, 212, 0.3);
+        }
+        .search-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        /* Search section styles */
+        .search-section {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+        }
+        .search-section:not([style*="display: none"]) {
+            display: block;
+        }
+        .search-hint {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
         /* Results styles */
         .results-container {
             margin-top: 20px;
@@ -290,39 +336,109 @@
 
         <!-- Query Interface -->
         <div class="controls-container">
+            <!-- Search Type Selector -->
             <div class="control-group">
-                <label class="control-label" for="region-select">Region:</label>
-                <select id="region-select" class="control-input">
-                    <option value="">-- Select Region --</option>
-                    <option value="East">East</option>
-                    <option value="Central">Central</option>
-                    <option value="West">West</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" for="area-select">Area:</label>
-                <select id="area-select" class="control-input" disabled>
-                    <option value="">-- Select Area --</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Coverage Type:</label>
+                <label class="control-label">Search Type:</label>
                 <div class="radio-group">
                     <label class="radio-label">
-                        <input type="radio" name="coverage" value="all" checked>
-                        All Coverage
+                        <input type="radio" name="searchType" value="regional" checked onchange="switchSearchType()">
+                        Regional Search
                     </label>
                     <label class="radio-label">
-                        <input type="radio" name="coverage" value="primary">
-                        Primary Only
+                        <input type="radio" name="searchType" value="epc" onchange="switchSearchType()">
+                        EPC Client Search
                     </label>
                     <label class="radio-label">
-                        <input type="radio" name="coverage" value="secondary">
-                        Secondary Only
+                        <input type="radio" name="searchType" value="user" onchange="switchSearchType()">
+                        Individual User
                     </label>
                 </div>
+            </div>
+
+            <!-- Regional Search Controls -->
+            <div id="regional-controls" class="search-section">
+                <div class="control-group">
+                    <label class="control-label" for="region-select">Region:</label>
+                    <select id="region-select" class="control-input">
+                        <option value="">-- Select Region --</option>
+                        <option value="East">East</option>
+                        <option value="Central">Central</option>
+                        <option value="West">West</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="area-select">Area:</label>
+                    <select id="area-select" class="control-input" disabled>
+                        <option value="">-- Select Area --</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Coverage Type:</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="coverage" value="all" checked>
+                            All Coverage
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="coverage" value="primary">
+                            Primary Only
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="coverage" value="secondary">
+                            Secondary Only
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EPC Client Search Controls -->
+            <div id="epc-controls" class="search-section" style="display: none;">
+                <div class="control-group">
+                    <label class="control-label" for="client-select">Client:</label>
+                    <select id="client-select" class="control-input">
+                        <option value="">-- Select Client --</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">EPC Coverage Type:</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="epc-coverage" value="all" checked>
+                            All EPC Personnel
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="epc-coverage" value="primary">
+                            Primary Contact Only
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="epc-coverage" value="secondary">
+                            Secondary Support Only
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Individual User Search Controls -->
+            <div id="user-controls" class="search-section" style="display: none;">
+                <div class="control-group">
+                    <label class="control-label" for="user-search">Search User:</label>
+                    <input type="text" id="user-search" class="control-input" placeholder="Enter name or email...">
+                    <div class="search-hint">Search by first name, last name, display name, or email address</div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="user-select">Select User:</label>
+                    <select id="user-select" class="control-input">
+                        <option value="">-- Type to search users --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <button id="search-button" class="search-button" onclick="performQuery()">
+                    🔍 Search Personnel
+                </button>
             </div>
         </div>
 
@@ -396,6 +512,12 @@
             // Initialize area dropdown
             updateAreaDropdown('');
             
+            // Initialize EPC client dropdown
+            initializeClientDropdown();
+            
+            // Initialize user search
+            initializeUserSearch();
+            
             console.log('✅ AreaMap initialization complete');
         });
 
@@ -464,7 +586,7 @@
                 
                 setTimeout(() => {
                     document.getElementById('area-select').value = areaName;
-                    performQuery();
+                    performAreaQuery(); // Use separate function for area clicks
                 }, 100);
             }
         }
@@ -497,16 +619,18 @@
             regionSelect.addEventListener('change', function() {
                 const region = this.value;
                 updateAreaDropdown(region);
-                performQuery();
+                // Remove automatic query - user must click search button
             });
             
             areaSelect.addEventListener('change', function() {
-                performQuery();
+                // Remove automatic query - user must click search button
             });
             
-            // Radio button listeners
+            // Radio button listeners - remove automatic query
             document.querySelectorAll('input[name="coverage"]').forEach(radio => {
-                radio.addEventListener('change', performQuery);
+                radio.addEventListener('change', function() {
+                    // No automatic query - user must click search button
+                });
             });
         }
 
@@ -546,13 +670,298 @@
             });
         }
 
-        // Perform personnel query
+        // Switch between search types
+        function switchSearchType() {
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            
+            // Hide all search sections
+            document.getElementById('regional-controls').style.display = 'none';
+            document.getElementById('epc-controls').style.display = 'none';
+            document.getElementById('user-controls').style.display = 'none';
+            
+            // Show selected search section
+            document.getElementById(searchType + '-controls').style.display = 'block';
+            
+            // Update search button text based on type
+            const searchButton = document.getElementById('search-button');
+            switch(searchType) {
+                case 'regional':
+                    searchButton.innerHTML = '🔍 Search Personnel';
+                    break;
+                case 'epc':
+                    searchButton.innerHTML = '🏢 Search EPC Personnel';
+                    break;
+                case 'user':
+                    searchButton.innerHTML = '👤 Find User';
+                    break;
+            }
+            
+            console.log('Search type switched to:', searchType);
+        }
+
+        // Initialize EPC client dropdown
+        function initializeClientDropdown() {
+            console.log('🏢 Initializing EPC client dropdown...');
+            const clientSelect = document.getElementById('client-select');
+            
+            if (!clientSelect) {
+                console.error('❌ Client select element not found!');
+                return;
+            }
+            
+            // Extract unique EPC clients from Primary/Secondary Area IDs
+            const clients = new Set();
+            
+            console.log(`📊 Processing ${personnelData.length} personnel records for EPC clients`);
+            
+            personnelData.forEach((person, index) => {
+                console.log(`👤 Processing person ${index + 1}: ${person.Title}`);
+                
+                // Check Primary Areas for EPC codes (non-regional codes)
+                const primaryAreas = person.PrimaryAreaIDs || [];
+                console.log(`  📍 Primary areas: ${JSON.stringify(primaryAreas)}`);
+                
+                primaryAreas.forEach(areaId => {
+                    if (areaId && isEPCCode(areaId)) {
+                        const clientName = extractClientNameFromCode(areaId);
+                        console.log(`    🎯 EPC code found: ${areaId} → ${clientName}`);
+                        if (clientName) {
+                            clients.add(clientName);
+                        }
+                    } else {
+                        console.log(`    📍 Regional code: ${areaId}`);
+                    }
+                });
+                
+                // Check Secondary Areas for EPC codes
+                const secondaryAreas = person.SecondaryAreaIDs || [];
+                console.log(`  📍 Secondary areas: ${JSON.stringify(secondaryAreas)}`);
+                
+                secondaryAreas.forEach(areaId => {
+                    if (areaId && isEPCCode(areaId)) {
+                        const clientName = extractClientNameFromCode(areaId);
+                        console.log(`    🎯 EPC code found: ${areaId} → ${clientName}`);
+                        if (clientName) {
+                            clients.add(clientName);
+                        }
+                    } else {
+                        console.log(`    📍 Regional code: ${areaId}`);
+                    }
+                });
+            });
+            
+            // Sort clients and add to dropdown
+            const sortedClients = Array.from(clients).sort();
+            console.log(`🎉 Found EPC clients: ${JSON.stringify(sortedClients)}`);
+            
+            sortedClients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client;
+                option.textContent = client;
+                clientSelect.appendChild(option);
+            });
+            
+            console.log(`✅ Initialized ${sortedClients.length} EPC clients from area codes`);
+        }
+
+        // Check if an area code is an EPC client code (not regional A/B/C codes)
+        function isEPCCode(areaId) {
+            if (!areaId || typeof areaId !== 'string') return false;
+            
+            // Regional codes follow exact pattern: A/B/C + 2 digits (A01, B05, C08, etc.)
+            const regionalPattern = /^[ABC]\d{2}$/;
+            
+            // If it doesn't match the exact regional pattern, consider it an EPC code
+            return !regionalPattern.test(areaId.trim());
+        }
+
+        // Extract client name from EPC area code
+        function extractClientNameFromCode(areaId) {
+            if (!areaId) return null;
+            
+            // EPC codes might be formatted as:
+            // "EPC-ClientName", "CLIENT-Name", "ClientName", etc.
+            let clientName = areaId.trim();
+            
+            // Remove common EPC prefixes
+            clientName = clientName.replace(/^(EPC|CLIENT|PROJ|PROJECT)[-_]/i, '');
+            
+            // Convert underscores/dashes to spaces and title case
+            clientName = clientName
+                .replace(/[-_]/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+            
+            return clientName || areaId;
+        }
+
+        // Initialize user search functionality
+        function initializeUserSearch() {
+            const userSearch = document.getElementById('user-search');
+            const userSelect = document.getElementById('user-select');
+            
+            userSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                // Clear previous results
+                userSelect.innerHTML = '<option value="">-- Select from results --</option>';
+                
+                if (searchTerm.length < 2) {
+                    userSelect.disabled = true;
+                    return;
+                }
+                
+                // Search through personnel data
+                const matches = personnelData.filter(person => {
+                    const searchFields = [
+                        person.FirstName,
+                        person.LastName,
+                        person.PreferredFirstName,
+                        person.Title,
+                        person.UserDisplayName,
+                        person.UserEmail
+                    ];
+                    
+                    return searchFields.some(field => 
+                        field && field.toLowerCase().includes(searchTerm)
+                    );
+                });
+                
+                // Add matches to dropdown
+                matches.slice(0, 20).forEach(person => { // Limit to 20 results
+                    const option = document.createElement('option');
+                    const displayName = person.PreferredFirstName || person.FirstName;
+                    const fullName = person.Title || `${person.FirstName} ${person.LastName}`;
+                    option.value = person.UserEmail || person.ID;
+                    option.textContent = `${fullName} (${person.UserEmail})`;
+                    option.dataset.personData = JSON.stringify(person);
+                    userSelect.appendChild(option);
+                });
+                
+                userSelect.disabled = matches.length === 0;
+                
+                if (matches.length === 0 && searchTerm.length >= 2) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No users found';
+                    option.disabled = true;
+                    userSelect.appendChild(option);
+                }
+                
+                console.log(`User search "${searchTerm}" found ${matches.length} matches`);
+            });
+        }
+
+        // Perform personnel query (for search button)
         function performQuery() {
+            console.log('🔍 performQuery called');
+            
+            try {
+                const searchType = document.querySelector('input[name="searchType"]:checked').value;
+                console.log('🎯 Search type selected:', searchType);
+                
+                switch(searchType) {
+                    case 'regional':
+                        console.log('📍 Calling performRegionalQuery');
+                        performRegionalQuery();
+                        break;
+                    case 'epc':
+                        console.log('🏢 Calling performEPCQuery');
+                        performEPCQuery();
+                        break;
+                    case 'user':
+                        console.log('👤 Calling performUserQuery');
+                        performUserQuery();
+                        break;
+                    default:
+                        console.error('❌ Unknown search type:', searchType);
+                }
+            } catch (error) {
+                console.error('❌ Error in performQuery:', error);
+                alert('Search error: ' + error.message);
+            }
+        }
+
+        // Perform regional query
+        function performRegionalQuery() {
+            console.log('📍 performRegionalQuery started');
+            
             const region = document.getElementById('region-select').value;
             const area = document.getElementById('area-select').value;
             const coverageType = document.querySelector('input[name="coverage"]:checked').value;
             
-            console.log('Performing query:', { region, area, coverageType });
+            console.log('📊 Regional query inputs:', { region, area, coverageType });
+            
+            // Validation: require at least region selection for manual searches
+            if (!region && !area) {
+                console.log('❌ Validation failed: no region or area selected');
+                alert('Please select at least a Region to search for personnel.');
+                return;
+            }
+            
+            console.log('✅ Validation passed, finding matching personnel...');
+            
+            // Find matching personnel
+            const results = findMatchingPersonnel(region, area, coverageType);
+            console.log(`🎯 Found ${results.length} matching personnel:`, results.map(p => p.Title));
+            
+            // Show results in modal
+            const title = area || region || 'All Areas';
+            const summary = `${results.length} personnel found`;
+            console.log('🚀 Calling showPersonnelModal...');
+            showPersonnelModal(title, summary, results);
+        }
+
+        // Perform EPC client query
+        function performEPCQuery() {
+            const client = document.getElementById('client-select').value;
+            const epcCoverageType = document.querySelector('input[name="epc-coverage"]:checked').value;
+            
+            // Validation: require client selection
+            if (!client) {
+                alert('Please select a Client to search for EPC personnel.');
+                return;
+            }
+            
+            console.log('Performing EPC query:', { client, epcCoverageType });
+            
+            // Find matching EPC personnel
+            const results = findMatchingEPCPersonnel(client, epcCoverageType);
+            
+            // Show results in modal
+            const title = `EPC Personnel - ${client}`;
+            const summary = `${results.length} EPC personnel found for ${client}`;
+            showPersonnelModal(title, summary, results);
+        }
+
+        // Perform individual user query
+        function performUserQuery() {
+            const userSelect = document.getElementById('user-select');
+            const selectedOption = userSelect.options[userSelect.selectedIndex];
+            
+            // Validation: require user selection
+            if (!selectedOption || !selectedOption.dataset.personData) {
+                alert('Please search for and select a user.');
+                return;
+            }
+            
+            const person = JSON.parse(selectedOption.dataset.personData);
+            console.log('Performing user query:', person);
+            
+            // Show single user in modal
+            const title = `User Profile - ${person.Title || person.UserDisplayName}`;
+            const summary = 'Individual user details';
+            showPersonnelModal(title, summary, [person]);
+        }
+
+        // Perform area query (for map clicks - no validation needed)
+        function performAreaQuery() {
+            const region = document.getElementById('region-select').value;
+            const area = document.getElementById('area-select').value;
+            const coverageType = document.querySelector('input[name="coverage"]:checked').value;
+            
+            console.log('Performing area query:', { region, area, coverageType });
             
             // Find matching personnel
             const results = findMatchingPersonnel(region, area, coverageType);
@@ -605,13 +1014,55 @@
             });
         }
 
+        // Find matching EPC personnel based on client
+        function findMatchingEPCPersonnel(client, epcCoverageType) {
+            return personnelData.filter(person => {
+                const primaryAreas = person.PrimaryAreaIDs || [];
+                const secondaryAreas = person.SecondaryAreaIDs || [];
+                
+                // Find EPC codes in primary areas that match the client
+                const primaryEPCMatch = primaryAreas.some(areaId => {
+                    if (!isEPCCode(areaId)) return false;
+                    const clientName = extractClientNameFromCode(areaId);
+                    return clientName && clientName.toLowerCase() === client.toLowerCase();
+                });
+                
+                // Find EPC codes in secondary areas that match the client
+                const secondaryEPCMatch = secondaryAreas.some(areaId => {
+                    if (!isEPCCode(areaId)) return false;
+                    const clientName = extractClientNameFromCode(areaId);
+                    return clientName && clientName.toLowerCase() === client.toLowerCase();
+                });
+                
+                // Filter by coverage type
+                switch(epcCoverageType) {
+                    case 'all':
+                        return primaryEPCMatch || secondaryEPCMatch;
+                    case 'primary':
+                        return primaryEPCMatch;
+                    case 'secondary':
+                        return secondaryEPCMatch;
+                    default:
+                        return false;
+                }
+            });
+        }
+
         // Show personnel modal
         function showPersonnelModal(title, summary, results) {
+            console.log('📋 showPersonnelModal called:', { title, summary, resultCount: results.length });
+            
             const modal = document.getElementById('modal-overlay');
             const modalTitle = document.getElementById('modal-title');
             const modalSubtitle = document.getElementById('modal-subtitle');
             const modalContent = document.getElementById('modal-content');
             
+            if (!modal) {
+                console.error('❌ Modal element not found!');
+                return;
+            }
+            
+            console.log('🎯 Setting modal title and content...');
             modalTitle.textContent = title;
             modalSubtitle.textContent = summary;
             
@@ -619,14 +1070,30 @@
             let content = '';
             if (results.length === 0) {
                 content = '<div style="text-align: center; padding: 40px; color: #666;">No personnel found for the selected criteria.</div>';
+                console.log('⚠️ No results found, showing empty message');
             } else {
-                results.forEach(person => {
+                console.log(`👥 Building content for ${results.length} personnel`);
+                results.forEach((person, index) => {
+                    console.log(`  👤 Adding person ${index + 1}: ${person.Title}`);
                     content += createPersonCard(person, true);
                 });
             }
             
             modalContent.innerHTML = content;
+            console.log('📱 Adding "show" class to modal...');
             modal.classList.add('show');
+            
+            // Double-check modal visibility
+            setTimeout(() => {
+                const isVisible = modal.classList.contains('show');
+                const computedStyle = window.getComputedStyle(modal);
+                console.log('🔍 Modal visibility check:', { 
+                    hasShowClass: isVisible, 
+                    opacity: computedStyle.opacity,
+                    transform: computedStyle.transform,
+                    right: computedStyle.right
+                });
+            }, 100);
         }
 
         // Close modal
@@ -637,9 +1104,9 @@
 
         // Create person card HTML
         function createPersonCard(person, isModal) {
+            // Use only provided ProfilePicture or fallback to embedded SVG placeholder
             const profileImg = person.ProfilePicture || 
-                `/_layouts/15/userphoto.aspx?size=M&accountname=${person.UserEmail}` ||
-                'https://via.placeholder.com/50';
+                'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiNmMGY2ZmMiLz4KPHN2ZyB4PSIxMiIgeT0iMTAiIHdpZHRoPSIyNiIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI2IDMwIiBmaWxsPSJub25lIj4KPGNpcmNsZSBjeD0iMTMiIGN5PSI5IiByPSI2IiBmaWxsPSIjNjY2Ii8+CjxwYXRoIGQ9Ik0yIDI2YzAtNy43MyA1LjgyLTE0IDEzLTE0czEzIDYuMjcgMTMgMTQiIGZpbGw9IiM2NjYiLz4KPC9zdmc+Cjwvc3ZnPg==';
             
             const displayName = person.PreferredFirstName || person.FirstName;
             const fullName = person.Title || `${person.FirstName} ${person.LastName}`;
@@ -661,7 +1128,7 @@
             
             let html = `
                 <div class="person-card ${isModal ? 'modal-card' : ''}">
-                    <img src="${profileImg}" class="profile-image" alt="${fullName}" onerror="this.src='https://via.placeholder.com/50'">
+                    <img src="${profileImg}" class="profile-image" alt="${fullName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiNmMGY2ZmMiLz4KPHN2ZyB4PSIxMiIgeT0iMTAiIHdpZHRoPSIyNiIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI2IDMwIiBmaWxsPSJub25lIj4KPGNpcmNsZSBjeD0iMTMiIGN5PSI5IiByPSI2IiBmaWxsPSIjNjY2Ii8+CjxwYXRoIGQ9Ik0yIDI2YzAtNy43MyA1LjgyLTE0IDEzLTE0czEzIDYuMjcgMTMgMTQiIGZpbGw9IiM2NjYiLz4KPC9zdmc+Cjwvc3ZnPg=='">
                     <div class="person-info">
                         <div class="person-name">${fullName}${coverageBadge}</div>
                         <div class="person-email">${person.UserEmail}</div>
@@ -680,17 +1147,56 @@
                 `;
             }
             
-            // Add area assignments
+            // Add area assignments and EPC client information
             if (isModal && (primaryAreas.length > 0 || secondaryAreas.length > 0)) {
                 html += '<div class="areas-info">';
-                if (primaryAreas.length > 0) {
-                    const primaryNames = primaryAreas.map(id => areaNames[id] || id).join(', ');
-                    html += `<div><strong>Primary Areas:</strong> ${primaryNames}</div>`;
+                
+                // Separate regional areas from EPC clients
+                const primaryRegionalAreas = [];
+                const primaryEPCClients = [];
+                const secondaryRegionalAreas = [];
+                const secondaryEPCClients = [];
+                
+                // Process primary areas
+                primaryAreas.forEach(id => {
+                    if (isEPCCode(id)) {
+                        const clientName = extractClientNameFromCode(id);
+                        if (clientName) {
+                            primaryEPCClients.push(clientName);
+                        }
+                    } else {
+                        primaryRegionalAreas.push(areaNames[id] || id);
+                    }
+                });
+                
+                // Process secondary areas
+                secondaryAreas.forEach(id => {
+                    if (isEPCCode(id)) {
+                        const clientName = extractClientNameFromCode(id);
+                        if (clientName) {
+                            secondaryEPCClients.push(clientName);
+                        }
+                    } else {
+                        secondaryRegionalAreas.push(areaNames[id] || id);
+                    }
+                });
+                
+                // Display regional areas
+                if (primaryRegionalAreas.length > 0) {
+                    html += `<div><strong>Primary Areas:</strong> ${primaryRegionalAreas.join(', ')}</div>`;
                 }
-                if (secondaryAreas.length > 0) {
-                    const secondaryNames = secondaryAreas.map(id => areaNames[id] || id).join(', ');
-                    html += `<div><strong>Secondary Areas:</strong> ${secondaryNames}</div>`;
+                if (secondaryRegionalAreas.length > 0) {
+                    html += `<div><strong>Secondary Areas:</strong> ${secondaryRegionalAreas.join(', ')}</div>`;
                 }
+                
+                // Display EPC clients
+                if (primaryEPCClients.length > 0) {
+                    html += `<div><strong>Primary EPC Clients:</strong> ${primaryEPCClients.join(', ')}</div>`;
+                }
+                if (secondaryEPCClients.length > 0) {
+                    html += `<div><strong>Secondary EPC Clients:</strong> ${secondaryEPCClients.join(', ')}</div>`;
+                }
+                
                 html += '</div>';
             }
             
@@ -835,10 +1341,30 @@
             }
         });
 
-        // Click outside modal to close
+        // Click outside modal to close (enhanced)
         document.getElementById('modal-overlay').addEventListener('click', function(event) {
-            if (event.target === this) {
+            // Close modal if clicking on the overlay background or outside the modal content
+            if (event.target === this || event.target.classList.contains('modal-overlay')) {
                 closeModal();
+            }
+        });
+
+        // Also listen for clicks on modal header and content areas
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('modal-overlay');
+            const modalContent = modal.querySelector('.modal-header, .modal-content');
+            
+            // If modal is open and click is outside modal content
+            if (modal.classList.contains('show')) {
+                const modalRect = modal.getBoundingClientRect();
+                const clickX = event.clientX;
+                const clickY = event.clientY;
+                
+                // Check if click is outside the modal bounds
+                if (clickX < modalRect.left || clickX > modalRect.right || 
+                    clickY < modalRect.top || clickY > modalRect.bottom) {
+                    closeModal();
+                }
             }
         });
     </script>

@@ -6,7 +6,11 @@
       "Bash(rg:*)",
       "Bash(cp:*)",
       "Bash(mkdir:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(./build-areamap.sh:*)",
+      "Bash(chmod:*)",
+      "Bash(open test-search.html)",
+      "Bash(open:*)"
     ],
     "deny": []
   }

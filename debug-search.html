@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Search Modal</title>
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            pointer-events: none;
+            overflow-y: auto;
+        }
+        .modal-overlay.show {
+            right: 0;
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .modal-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .modal-close:hover {
+            opacity: 1;
+        }
+        .modal-content {
+            padding: 20px;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        .search-button {
+            padding: 12px 20px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .person-card {
+            background-color: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+        }
+        .profile-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .person-info {
+            flex: 1;
+        }
+        .person-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        .person-email {
+            color: #0078d4;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .person-title {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Search Modal Test</h1>
+    
+    <div class="control-group">
+        <label>Region:</label>
+        <select id="region-select">
+            <option value="">-- Select Region --</option>
+            <option value="East">East</option>
+            <option value="Central">Central</option>
+            <option value="West">West</option>
+        </select>
+    </div>
+    
+    <div class="control-group">
+        <button class="search-button" onclick="testSearch()">
+            🔍 Test Search
+        </button>
+        <button class="search-button" onclick="testModal()">
+            🔍 Test Modal
+        </button>
+    </div>
+    
+    <div id="debug-output" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Test Modal</h2>
+            <div class="modal-subtitle" id="modal-subtitle">Testing...</div>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-content" id="modal-content">
+            <p>Modal content will appear here...</p>
+        </div>
+    </div>
+
+    <script>
+        // Test data
+        const personnelData = [
+            {
+                "Title": "John Smith",
+                "UserEmail": "john.smith@company.com",
+                "FirstName": "John",
+                "LastName": "Smith",
+                "UserJobTitle": "Sales Engineer",
+                "PrimaryAreaIDs": ["A01", "A02"],
+                "SecondaryAreaIDs": ["B01"]
+            },
+            {
+                "Title": "Jennifer Chen", 
+                "UserEmail": "jennifer.chen@company.com",
+                "FirstName": "Jennifer",
+                "LastName": "Chen",
+                "UserJobTitle": "EPC Project Manager",
+                "PrimaryAreaIDs": ["EPC-Microsoft", "EPC-Amazon"],
+                "SecondaryAreaIDs": ["CLIENT-Google"]
+            }
+        ];
+
+        function testModal() {
+            console.log('Testing modal directly...');
+            const modal = document.getElementById('modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalSubtitle = document.getElementById('modal-subtitle');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalTitle.textContent = "Direct Modal Test";
+            modalSubtitle.textContent = "Modal triggered directly";
+            modalContent.innerHTML = "<p>This is a direct modal test - modal should be visible now!</p>";
+            
+            modal.classList.add('show');
+            
+            document.getElementById('debug-output').innerHTML = `
+                <strong>Direct Modal Test:</strong><br>
+                Modal classes: ${modal.className}<br>
+                Modal opacity: ${window.getComputedStyle(modal).opacity}<br>
+                Modal transform: ${window.getComputedStyle(modal).transform}
+            `;
+        }
+
+        function testSearch() {
+            console.log('Testing search function...');
+            const region = document.getElementById('region-select').value;
+            
+            if (!region) {
+                alert('Please select a region first');
+                return;
+            }
+
+            // Simulate search
+            const results = personnelData.filter(person => {
+                const primaryAreas = person.PrimaryAreaIDs || [];
+                const regionPrefixes = { 'East': 'A', 'Central': 'B', 'West': 'C' };
+                const regionPrefix = regionPrefixes[region];
+                return primaryAreas.some(id => id.startsWith(regionPrefix));
+            });
+
+            console.log(`Found ${results.length} results for region ${region}`);
+            
+            // Show in modal
+            showPersonnelModal(`${region} Region`, `${results.length} personnel found`, results);
+            
+            document.getElementById('debug-output').innerHTML = `
+                <strong>Search Test:</strong><br>
+                Region: ${region}<br>
+                Results: ${results.length}<br>
+                Personnel: ${results.map(p => p.Title).join(', ')}
+            `;
+        }
+
+        function showPersonnelModal(title, summary, results) {
+            console.log('showPersonnelModal called:', title, summary, results.length);
+            
+            const modal = document.getElementById('modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalSubtitle = document.getElementById('modal-subtitle');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalTitle.textContent = title;
+            modalSubtitle.textContent = summary;
+            
+            let content = '';
+            if (results.length === 0) {
+                content = '<div style="text-align: center; padding: 40px; color: #666;">No personnel found.</div>';
+            } else {
+                results.forEach(person => {
+                    content += `
+                        <div class="person-card">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiNmMGY2ZmMiLz4KPHN2ZyB4PSIxMiIgeT0iMTAiIHdpZHRoPSIyNiIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI2IDMwIiBmaWxsPSJub25lIj4KPGNpcmNsZSBjeD0iMTMiIGN5PSI5IiByPSI2IiBmaWxsPSIjNjY2Ii8+CjxwYXRoIGQ9Ik0yIDI2YzAtNy43MyA1LjgyLTE0IDEzLTE0czEzIDYuMjcgMTMgMTQiIGZpbGw9IiM2NjYiLz4KPC9zdmc+Cjwvc3ZnPg==" class="profile-image" alt="${person.Title}">
+                            <div class="person-info">
+                                <div class="person-name">${person.Title}</div>
+                                <div class="person-email">${person.UserEmail}</div>
+                                <div class="person-title">${person.UserJobTitle}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            modalContent.innerHTML = content;
+            modal.classList.add('show');
+            
+            console.log('Modal should now be visible');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.remove('show');
+        }
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

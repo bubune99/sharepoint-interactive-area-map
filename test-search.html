@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Button Test</title>
+    <style>
+        .search-button {
+            padding: 12px 20px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Button Test</h1>
+    
+    <!-- Search Type Radio Buttons -->
+    <div class="control-group">
+        <label>Search Type:</label>
+        <input type="radio" name="searchType" value="regional" checked> Regional
+        <input type="radio" name="searchType" value="epc"> EPC
+        <input type="radio" name="searchType" value="user"> User
+    </div>
+    
+    <!-- Search Button -->
+    <div class="control-group">
+        <button id="search-button" class="search-button" onclick="performQuery()">
+            🔍 Search Personnel
+        </button>
+    </div>
+    
+    <!-- Results -->
+    <div id="results" style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
+        Click the search button to test...
+    </div>
+
+    <script>
+        // Simple test data
+        const personnelData = [
+            {
+                "Title": "John Smith",
+                "UserEmail": "john.smith@company.com",
+                "PrimaryAreaIDs": ["A01", "EPC-Microsoft"],
+                "SecondaryAreaIDs": ["B01"]
+            },
+            {
+                "Title": "Jennifer Chen",
+                "UserEmail": "jennifer.chen@company.com",
+                "PrimaryAreaIDs": ["EPC-Microsoft", "EPC-Amazon"],
+                "SecondaryAreaIDs": ["CLIENT-Google"]
+            }
+        ];
+
+        function performQuery() {
+            console.log('performQuery called');
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            console.log('Search type:', searchType);
+            
+            const results = document.getElementById('results');
+            results.innerHTML = `Search type: ${searchType}<br>Personnel data: ${personnelData.length} records<br>Button clicked at: ${new Date().toLocaleTimeString()}`;
+        }
+
+        function isEPCCode(areaId) {
+            if (!areaId || typeof areaId !== 'string') return false;
+            const regionalPattern = /^[ABC]\d{2}$/;
+            return !regionalPattern.test(areaId.trim());
+        }
+
+        function extractClientNameFromCode(areaId) {
+            if (!areaId) return null;
+            let clientName = areaId.trim();
+            clientName = clientName.replace(/^(EPC|CLIENT|PROJ|PROJECT)[-_]/i, '');
+            clientName = clientName
+                .replace(/[-_]/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+            return clientName || areaId;
+        }
+
+        // Test the EPC detection
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Testing EPC detection:');
+            console.log('A01 is EPC:', isEPCCode('A01')); // Should be false
+            console.log('EPC-Microsoft is EPC:', isEPCCode('EPC-Microsoft')); // Should be true
+            console.log('CLIENT-Google is EPC:', isEPCCode('CLIENT-Google')); // Should be true
+            
+            console.log('Testing client name extraction:');
+            console.log('EPC-Microsoft =>', extractClientNameFromCode('EPC-Microsoft'));
+            console.log('CLIENT-Google =>', extractClientNameFromCode('CLIENT-Google'));
+        });
+    </script>
+</body>
+</html>
