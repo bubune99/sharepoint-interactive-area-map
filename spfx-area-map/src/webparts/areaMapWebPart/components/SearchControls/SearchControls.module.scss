@@ -1,0 +1,25 @@
+.searchControls {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+:global {
+  .ms-ChoiceField {
+    margin-bottom: 8px;
+  }
+
+  .ms-Dropdown-title {
+    border-color: #d0d0d0;
+  }
+
+  .ms-Dropdown:hover .ms-Dropdown-title {
+    border-color: #0078d4;
+  }
+
+  .ms-Button-label {
+    font-weight: 600;
+  }
+}

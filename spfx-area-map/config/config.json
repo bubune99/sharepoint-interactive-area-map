@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "area-map-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/areaMapWebPart/AreaMapWebPartWebPart.js",
+          "manifest": "./src/webparts/areaMapWebPart/AreaMapWebPartWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "AreaMapWebPartWebPartStrings": "lib/webparts/areaMapWebPart/loc/{locale}.js"
+  }
+}

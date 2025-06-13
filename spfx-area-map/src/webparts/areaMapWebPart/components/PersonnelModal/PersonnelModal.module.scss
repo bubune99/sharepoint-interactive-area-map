@@ -1,0 +1,94 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+  color: white;
+}
+
+.title {
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+}
+
+.closeButton {
+  color: white;
+}
+
+.content {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.personnelCard {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #0078d4, #106ebe);
+  }
+}
+
+.areaSection {
+  margin-top: 8px;
+}
+
+.areaLabel {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.areaPrimary {
+  color: #107c41;
+}
+
+.areaSecondary {
+  color: #c87619;
+}
+
+.regionBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #f0f6fc;
+  color: #0078d4;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid #e1ebf5;
+}
+
+.noResults {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "c9e5d1f3-8a7b-4e2a-9c8a-7c9e9b3f5e2d",
+  "alias": "AreaMapWebPartWebPart",
+  "componentType": "WebPart",
+  "version": "0.0.1",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [{
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+    "group": { "default": "Other" },
+    "title": { "default": "Interactive Area Map" },
+    "description": { "default": "Interactive area map for personnel search and visualization" },
+    "officeFabricIconFontName": "MapPin",
+    "properties": {
+      "listName": "CAE Personnel",
+      "analyticsListName": "AreaMapAnalytics",
+      "enableAnalytics": true
+    }
+  }]
+}

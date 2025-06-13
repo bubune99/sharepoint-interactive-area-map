@@ -1,0 +1,31 @@
+.areaMapApp {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.title {
+  color: #0078d4;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #666;
+}
+
+.error {
+  background-color: #fde7e9;
+  border-left: 4px solid #a80000;
+  padding: 16px;
+  margin: 20px 0;
+  color: #a80000;
+  font-size: 14px;
+}

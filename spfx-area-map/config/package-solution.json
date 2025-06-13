@@ -1,0 +1,21 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "Interactive Area Map",
+    "id": "3b5a7b9c-5d1f-4e2a-8c8a-7c9e9b3f5e2d",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.17.4"
+    }
+  },
+  "paths": {
+    "zippedPackage": "solution/interactive-area-map.sppkg"
+  }
+}
